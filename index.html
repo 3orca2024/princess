@@ -3,378 +3,387 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Princess Arcade — Functional Build (Work-First)</title>
+<title>Princess Arcade — All Games</title>
 <style>
-  /* Clean functional UI for correctness first */
-  :root{
-    --accent:#ff5aa2; --bg:#fff7fb; --panel:#ffffff; --muted:#333;
-  }
-  html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);-webkit-font-smoothing:antialiased}
-  .container{max-width:1100px;margin:18px auto;padding:14px}
+  :root{--accent:#ff4081;--bg:#fff6fb;--card:#fff;--muted:#3b2b3b}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:12px auto;padding:14px}
   header{display:flex;justify-content:space-between;align-items:center}
-  h1{margin:0;font-size:20px;color:var(--muted)}
-  .top-right{display:flex;gap:8px;align-items:center}
-  .badge{background:var(--panel);padding:8px 12px;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,0.06);font-weight:700}
+  h1{margin:0;color:var(--muted)}
   nav{margin:12px 0;display:flex;gap:8px;flex-wrap:wrap}
-  nav button{padding:8px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
-  .stage{display:flex;gap:12px}
+  .tab{padding:8px 12px;border-radius:9px;border:none;background:var(--card);cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,0.04)}
+  .tab.active{background:linear-gradient(180deg,var(--accent),#e6176f);color:#fff}
+  .layout{display:flex;gap:14px}
   .left{flex:1}
   .right{width:320px}
-  .panel{background:var(--panel);padding:12px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.06)}
-  canvas{width:100%;height:360px;background:#fff;border-radius:8px;display:block}
-  #drawCanvas{height:420px}
+  .panel{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.06)}
+  canvas{width:100%;height:520px;border-radius:10px;background:#fff;display:block}
+  #drawCanvas{height:520px}
   .controls{display:flex;gap:8px;align-items:center;margin-top:10px}
-  .btn{padding:8px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+  .btn{padding:8px 12px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer}
   .btn.ghost{background:#fff;border:1px solid #eee;color:var(--muted)}
-  .notice{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);display:none;z-index:999}
-  #selectModal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:900}
-  #selectCard{background:#fff;padding:14px;border-radius:10px;width:92%;max-width:720px}
-  .prin-grid{display:flex;flex-wrap:wrap;gap:8px}
-  .prin-card{flex:0 0 48%;background:#fafafa;padding:8px;border-radius:8px;cursor:pointer;border:2px solid transparent}
-  .prin-card.sel{border-color:var(--accent)}
-  #matchBoard{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-  .match-card{width:86px;height:100px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;border:2px solid #fde6f2}
-  @media (max-width:900px){ .prin-card{flex:0 0 100%} .right{width:100%} canvas{height:300px} #drawCanvas{height:360px} }
+  .small{font-size:13px;color:#6b4a62}
+  /* modals */
+  .modalMask{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:999}
+  .modal{background:#fff;width:92%;max-width:720px;border-radius:12px;padding:16px;max-height:84vh;overflow:auto}
+  .prin-grid{display:flex;flex-wrap:wrap;gap:10px}
+  .prin{flex:0 0 48%;padding:10px;border-radius:10px;background:#fff5fb;border:2px solid transparent;cursor:pointer}
+  .prin.sel{border-color:var(--accent);box-shadow:0 12px 28px rgba(255,64,129,0.08)}
+  .match-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding-top:8px}
+  .card{width:100px;height:120px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;border:2px solid #fde6f2}
+  #notify{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,0.12);display:none;z-index:1100}
+  footer{margin-top:12px;color:#806070;font-size:13px}
+  @media (max-width:900px){ .prin{flex:0 0 100% } .right{width:100%} canvas{height:420px} #drawCanvas{height:420px} }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="wrap">
   <header>
     <div>
-      <h1>Princess Arcade — Functional Build</h1>
-      <div style="font-size:13px;color:#6b4a62">Work-first: reliable gameplay for your class.</div>
+      <h1>Princess Arcade</h1>
+      <div class="small">Pick a princess, play 4 games, earn coins & buy hearts. Built to work.</div>
     </div>
-    <div class="top-right">
-      <div class="badge">Coins: <span id="coins">0</span></div>
-      <div class="badge">Hearts: <span id="hearts">0</span></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="small" style="background:#fff;padding:8px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.04)">Coins: <strong id="coins">0</strong></div>
+      <div class="small" style="background:#fff;padding:8px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.04)">Hearts: <strong id="hearts">0</strong></div>
       <button id="openStore" class="btn">Store</button>
-      <button id="openInstr" class="btn btn-ghost">Instructions</button>
+      <button id="openInstr" class="btn btn.ghost">Instructions</button>
     </div>
   </header>
 
-  <nav>
-    <button data-game="flappy" class="gameBtn">Flappy Princess</button>
-    <button data-game="runner" class="gameBtn">Princess Runner</button>
-    <button data-game="match" class="gameBtn">Match Game</button>
-    <button data-game="path" class="gameBtn">Draw Path (Endless)</button>
-    <button id="choosePrincess" class="btn btn-ghost">Choose Princess</button>
+  <nav id="tabs">
+    <button class="tab active" data-game="flap">Flappy Princess</button>
+    <button class="tab" data-game="runner">Princess Runner</button>
+    <button class="tab" data-game="match">Match Game</button>
+    <button class="tab" data-game="path">Draw-a-Path</button>
+    <button class="tab" data-game="choose">Choose Princess</button>
   </nav>
 
-  <div class="stage">
+  <div class="layout">
     <div class="left">
-      <div id="mainPanel" class="panel">
+      <div class="panel" id="gamePanel">
         <canvas id="mainCanvas"></canvas>
         <canvas id="drawCanvas" style="display:none"></canvas>
         <div id="matchBoard" style="display:none"></div>
       </div>
 
       <div class="controls">
-        <div id="selectedInfo" style="font-size:13px;color:#6b4a62">No princess selected</div>
+        <div id="selectedInfo" class="small">No princess selected</div>
         <div style="flex:1"></div>
-        <div id="countdown" style="font-weight:700;color:#6b4a62"></div>
+        <div id="countdown" class="small"></div>
         <button id="startBtn" class="btn">Start</button>
-        <button id="resetBtn" class="btn btn-ghost">Reset</button>
+        <button id="resetBtn" class="btn btn.ghost">Reset</button>
       </div>
-
     </div>
 
     <div class="right">
       <div class="panel">
         <h3 style="margin:6px 0">Object Control</h3>
-        <div style="font-size:13px;color:#6b4a62">Use this button (or SPACE) in Flappy/Runner</div>
+        <div class="small">Tap the button or press <strong>SPACE</strong> during Flappy/Runner.</div>
         <div style="height:8px"></div>
         <div id="objectArea"></div>
         <hr style="margin:10px 0">
-        <div style="font-size:13px;color:#6b4a62">Quick rules: Hearts prevent coin reset and return you to start. Earn coins in every game.</div>
+        <div class="small">Shop: buy hearts (30 coins each). Hearts let you survive one hit.</div>
+        <div style="height:8px"></div>
+        <button id="chooseBtn" class="btn btn.ghost">Choose/Change Princess</button>
       </div>
     </div>
   </div>
 
-  <div id="storePanel" class="panel" style="display:none;margin-top:12px">
-    <h3>Shop — Hearts</h3>
-    <div style="margin:6px 0">Hearts cost <strong>30</strong> coins.</div>
-    <button id="buyHeart" class="btn">Buy Heart (30)</button>
-    <button id="closeStore" class="btn btn-ghost" style="margin-left:8px">Close</button>
-  </div>
-
-  <div id="instrPanel" class="panel" style="display:none;margin-top:12px">
-    <h3>Instructions</h3>
-    <div style="font-size:13px;color:#6b4a62;line-height:1.4">
-      Flappy: SPACE or object button → dash/up. Avoid object obstacles. Hit = back to start (heart used first).<br>
-      Runner: 3-2-1 countdown → auto-run; tap/SPACE to jump. Hit = back to start (heart used first).<br>
-      Match: Flip 2 cards; pairs disappear; clear board to win coins.<br>
-      Path: Draw ahead while world scrolls automatically; car follows your path; avoid obstacles.
-    </div>
-    <button id="closeInstr" class="btn btn-ghost" style="margin-top:8px">Close</button>
-  </div>
+  <footer>Built to work — tell me any tweak and I’ll adjust it.</footer>
 </div>
 
-<!-- Selection modal -->
-<div id="selectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;display:flex;z-index:950">
-  <div id="selectCard" style="background:#fff;padding:14px;border-radius:10px;width:92%;max-width:720px">
-    <h3>Select Princess</h3>
-    <div style="font-size:13px;color:#6b4a62">Choose a princess — the object is your control in Flappy/Runner.</div>
-    <div style="height:8px"></div>
+<!-- Princess picker modal -->
+<div id="selectModal" class="modalMask" style="display:flex">
+  <div class="modal">
+    <h2>Choose your Princess</h2>
+    <p class="small">Pick a princess — each has an object you’ll use to dodge.</p>
     <div class="prin-grid" id="prinGrid"></div>
-    <div style="height:10px"></div>
-    <div style="text-align:right"><button id="confirmPrincess" class="btn">Confirm</button></div>
+    <div style="text-align:right;margin-top:10px">
+      <button id="confirmPrincess" class="btn">Confirm</button>
+    </div>
   </div>
 </div>
 
-<div id="notice" class="notice" style="display:none"></div>
+<!-- Store modal -->
+<div id="shopModal" class="modalMask"><div class="modal">
+  <h3>Shop</h3>
+  <p class="small">Hearts cost <strong>30</strong> coins. Hearts save you from a full reset.</p>
+  <div style="text-align:right"><button id="buyHeart" class="btn">Buy Heart (30)</button> <button id="closeShop" class="btn btn.ghost">Close</button></div>
+</div></div>
+
+<!-- Instructions modal -->
+<div id="instrModal" class="modalMask"><div class="modal">
+  <h3>Instructions</h3>
+  <p class="small" style="line-height:1.5">
+    <strong>Flappy Princess</strong> — press SPACE or tap the object button to dash/up-flap. Avoid obstacles (they show the same object). Hitting an obstacle uses a heart or resets you to start; passing obstacles gives coins.<br><br>
+    <strong>Princess Runner</strong> — Start triggers a 3–2–1 countdown. Click/SPACE to jump. Avoid obstacles. Coins on the track give coins.<br><br>
+    <strong>Match Game</strong> — 12 cards (6 pairs). Flip two — matched pairs disappear and award coins. Clear the board to get bonus coins.<br><br>
+    <strong>Draw-a-Path</strong> — Draw ahead of the moving world. The princess-car follows the drawn path. The world scrolls and new obstacles spawn; avoid them to collect coins.
+  </p>
+  <div style="text-align:right"><button id="closeInstrModal" class="btn btn.ghost">Close</button></div>
+</div></div>
+
+<div id="notify" class="notify"></div>
 
 <script>
-/* Fully functional, work-first index.html
-   - All games implemented with simple shapes/text for guaranteed behavior
-   - Persistent coins/hearts via localStorage
-   - Princess selection that applies to all games
-   - No external assets
-*/
+/* ***********************************************
+   Princess Arcade — functional, all-in-one file
+   - Four games: Flappy, Runner, Match, Draw Path
+   - Princess selection, Store, Instructions
+   - Coins & hearts persist in localStorage
+   - Fast, robust controls: Space + touch/mouse
+   *********************************************** */
 
-// ------------------ Persistence & HUD ------------------
+// ---------- Persistence & HUD ----------
 let coins = Number(localStorage.getItem('pa_coins') || 0);
 let hearts = Number(localStorage.getItem('pa_hearts') || 0);
-const coinsEl = document.getElementById('coins');
-const heartsEl = document.getElementById('hearts');
+const coinsEl = document.getElementById('coins'), heartsEl = document.getElementById('hearts');
 function saveState(){ localStorage.setItem('pa_coins', coins); localStorage.setItem('pa_hearts', hearts); updateHUD(); }
 function updateHUD(){ coinsEl.textContent = coins; heartsEl.textContent = hearts; }
 updateHUD();
 
-function notice(msg, t=1400){ const n=document.getElementById('notice'); n.textContent=msg; n.style.display='block'; clearTimeout(n._t); n._t=setTimeout(()=>n.style.display='none', t); }
+function notify(msg, time=1500){
+  const n = document.getElementById('notify');
+  n.textContent = msg; n.style.display='block';
+  clearTimeout(n._t); n._t = setTimeout(()=> n.style.display='none', time);
+}
 
-// ------------------ Princesses ------------------
+// ---------- Princess list ----------
 const PRINCESSES = [
-  {name:'Ariel', object:'seashell', color:'#ff7fbf'},
-  {name:'Elsa', object:'snowflake', color:'#cfe7ff'},
-  {name:'Moana', object:'wave', color:'#9fd4ff'},
-  {name:'Mulan', object:'sword', color:'#ffd6e9'},
-  {name:'Cinderella', object:'slipper', color:'#cfe0ff'},
-  {name:'Rapunzel', object:'lizard', color:'#f7d06a'},
-  {name:'Tiana', object:'frog', color:'#9be9b6'},
-  {name:'Belle', object:'book', color:'#ffd07a'}
+  {name:'Ariel', object:'seashell', emoji:'🐚', color:'#ff7fbf'},
+  {name:'Elsa', object:'snowflake', emoji:'❄️', color:'#cfe7ff'},
+  {name:'Moana', object:'wave', emoji:'🌊', color:'#9fd4ff'},
+  {name:'Mulan', object:'sword', emoji:'🗡️', color:'#ffd6e9'},
+  {name:'Cinderella', object:'slipper', emoji:'👠', color:'#cfe0ff'},
+  {name:'Rapunzel', object:'lizard', emoji:'🦎', color:'#f7d06a'},
+  {name:'Tiana', object:'frog', emoji:'🐸', color:'#9be9b6'},
+  {name:'Belle', object:'book', emoji:'📖', color:'#ffd07a'}
 ];
 let selected = null;
 
-// build selection modal
+// populate picker grid
 const prinGrid = document.getElementById('prinGrid');
 PRINCESSES.forEach((p, i) => {
-  const card = document.createElement('div');
-  card.className = 'prin-card';
-  card.innerHTML = `<div style="font-weight:700">${p.name}</div><div style="font-size:13px;color:#6b4a62">object: ${p.object}</div>`;
-  card.addEventListener('click', ()=> {
-    document.querySelectorAll('.prin-card').forEach(x=>x.classList.remove('sel'));
-    card.classList.add('sel');
-    card.dataset.idx = i;
+  const el = document.createElement('div');
+  el.className = 'prin';
+  el.innerHTML = `<div style="font-weight:700">${p.name}</div><div class="small">object: ${p.object} ${p.emoji}</div>`;
+  el.addEventListener('click', ()=> {
+    document.querySelectorAll('.prin').forEach(x=>x.classList.remove('sel'));
+    el.classList.add('sel');
+    el.dataset.idx = i;
   });
-  prinGrid.appendChild(card);
+  prinGrid.appendChild(el);
 });
-document.getElementById('choosePrincess').addEventListener('click', ()=> document.getElementById('selectModal').style.display='flex');
+
+// show select modal on load
+const selectModal = document.getElementById('selectModal');
+selectModal.style.display = 'flex';
 document.getElementById('confirmPrincess').addEventListener('click', ()=>{
-  const sel = document.querySelector('.prin-card.sel');
-  if(!sel){ notice('Pick a princess first'); return; }
-  const idx = Array.from(prinGrid.children).indexOf(sel);
+  const chosen = document.querySelector('.prin.sel');
+  if(!chosen){ notify('Please pick a princess'); return; }
+  const idx = Array.from(prinGrid.children).indexOf(chosen);
   selected = PRINCESSES[idx];
-  document.getElementById('selectModal').style.display='none';
-  document.getElementById('selectedInfo').textContent = `${selected.name} — object: ${selected.object}`;
-  setupObjectControl();
-  notice(`${selected.name} chosen`);
+  selectModal.style.display = 'none';
+  document.getElementById('selectedInfo').textContent = `${selected.name} — ${selected.object} ${selected.emoji}`;
+  setupObjectButton();
+  notify(`${selected.name} selected`);
 });
 
-// ------------------ UI: store & instructions ------------------
-document.getElementById('openStore').addEventListener('click', ()=> {
-  document.getElementById('storePanel').style.display='block'; document.getElementById('instrPanel').style.display='none';
-});
-document.getElementById('closeStore').addEventListener('click', ()=> document.getElementById('storePanel').style.display='none');
-document.getElementById('openInstr').addEventListener('click', ()=> {
-  document.getElementById('instrPanel').style.display='block'; document.getElementById('storePanel').style.display='none';
-});
-document.getElementById('closeInstr').addEventListener('click', ()=> document.getElementById('instrPanel').style.display='none');
+// also show modal on choose/change click
+document.getElementById('chooseBtn').addEventListener('click', ()=> { selectModal.style.display='flex'; });
+
+// ---------- Modals: Store & Instructions ----------
+document.getElementById('openStore').addEventListener('click', ()=> document.getElementById('shopModal').style.display = 'flex');
+document.getElementById('closeShop').addEventListener('click', ()=> document.getElementById('shopModal').style.display = 'none');
+document.getElementById('openInstr').addEventListener('click', ()=> document.getElementById('instrModal').style.display = 'flex');
+document.getElementById('closeInstrModal').addEventListener('click', ()=> document.getElementById('instrModal').style.display = 'none');
 document.getElementById('buyHeart').addEventListener('click', ()=> {
-  if(coins >= 30){ coins -= 30; hearts++; saveState(); notice('Heart purchased'); } else notice('Need 30 coins');
+  if(coins >= 30){ coins -= 30; hearts++; saveState(); notify('Heart purchased'); } else notify('Need 30 coins');
 });
 
-// ------------------ Game switching & canvas setup ------------------
-let currentGame = 'flappy';
-document.querySelectorAll('.gameBtn').forEach(b => b.addEventListener('click', ()=> {
-  currentGame = b.dataset.game;
+// ---------- Tabs & game switching ----------
+let currentGame = 'flap';
+const tabs = document.querySelectorAll('.tab');
+tabs.forEach(t => t.addEventListener('click', ()=> {
+  tabs.forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  currentGame = t.dataset.game;
   showGameView(currentGame);
 }));
 
+function showGameView(game){
+  // hide canvases / match board
+  document.getElementById('mainCanvas').style.display = 'none';
+  document.getElementById('drawCanvas').style.display = 'none';
+  document.getElementById('matchBoard').style.display = 'none';
+  // stop any running loops
+  stopAllGames();
+  document.getElementById('countdown').textContent = '';
+  if(game === 'flap'){ document.getElementById('mainCanvas').style.display = 'block'; initFlap(); drawFlapOnce(); }
+  if(game === 'runner'){ document.getElementById('mainCanvas').style.display = 'block'; initRunner(); drawRunnerOnce(); }
+  if(game === 'match'){ document.getElementById('matchBoard').style.display = 'flex'; initMatch(); }
+  if(game === 'path'){ document.getElementById('drawCanvas').style.display = 'block'; initPath(); drawPathOnce(); }
+  if(game === 'choose'){ selectModal.style.display = 'flex'; }
+}
+showGameView('flap'); // default
+
+// ---------- Canvas setup ----------
 const mainCanvas = document.getElementById('mainCanvas');
 const ctx = mainCanvas.getContext('2d');
 const drawCanvas = document.getElementById('drawCanvas');
 const dctx = drawCanvas.getContext('2d');
-const matchBoard = document.getElementById('matchBoard');
-
 function fitCanvases(){
-  const panel = document.getElementById('mainPanel');
+  const panel = document.getElementById('gamePanel');
   const r = panel.getBoundingClientRect();
-  mainCanvas.width = Math.max(480, Math.floor(r.width));
-  mainCanvas.height = Math.max(300, Math.floor(r.height - 60));
+  mainCanvas.width = Math.max(560, Math.floor(r.width));
+  mainCanvas.height = Math.max(420, Math.floor(r.height - 40));
   drawCanvas.width = mainCanvas.width;
-  drawCanvas.height = Math.max(360, mainCanvas.height + 60);
+  drawCanvas.height = Math.max(440, mainCanvas.height + 40);
 }
 window.addEventListener('resize', ()=> { fitCanvases(); drawCurrentView(); });
 fitCanvases();
 
-// hide/show views
-function showGameView(game){
-  // hide all
-  mainCanvas.style.display = 'none'; drawCanvas.style.display = 'none'; matchBoard.style.display = 'none';
-  document.getElementById('storePanel').style.display='none'; document.getElementById('instrPanel').style.display='none';
-  document.getElementById('countdown').textContent = '';
-  if(game === 'path') drawCanvas.style.display = 'block';
-  else if(game === 'match') matchBoard.style.display = 'flex';
-  else mainCanvas.style.display = 'block';
-  resetCurrentGame();
+// ---------- Game management ----------
+let rafHandle = null;
+function stopAllGames(){ if(rafHandle) cancelAnimationFrame(rafHandle); rafHandle = null; // also stop intervals if any
+  if(flapInterval) clearInterval(flapInterval);
+  if(runnerInterval) clearInterval(runnerInterval);
+  if(pathInterval) clearInterval(pathInterval);
 }
-showGameView('flappy');
+function drawCurrentView(){
+  if(currentGame === 'flap') drawFlapOnce();
+  if(currentGame === 'runner') drawRunnerOnce();
+  if(currentGame === 'match') renderMatch();
+  if(currentGame === 'path') drawPathOnce();
+}
 
-// keep track of active rAF handles to cancel when switching
-let activeAnimation = null;
-function cancelActiveAnimation(){ if(activeAnimation) cancelAnimationFrame(activeAnimation); activeAnimation = null; }
-
-// ------------------ Controls area (object button) ------------------
-function setupObjectControl(){
+// ---------- Object control button ----------
+function setupObjectButton(){
   const area = document.getElementById('objectArea');
   area.innerHTML = '';
   if(!selected) return;
   const btn = document.createElement('button');
   btn.className = 'btn';
-  btn.textContent = selected.object;
+  btn.textContent = `${selected.object} ${selected.emoji}`;
   btn.addEventListener('click', ()=> {
-    if(currentGame === 'flappy') flappyDash();
-    if(currentGame === 'runner') triggerRunnerJump();
+    if(currentGame === 'flap' && flapState.running) doFlapDash();
+    if(currentGame === 'runner' && runnerState.running) triggerRunnerJump();
+    // draw-path: no action button
   });
   area.appendChild(btn);
 }
 
-// ------------------ START / RESET ------------------
-document.getElementById('startBtn').addEventListener('click', ()=> startWithCountdown());
-document.getElementById('resetBtn').addEventListener('click', ()=> { resetCurrentGame(); notice('Reset'); });
+// ---------- Start / Reset ----------
+document.getElementById('startBtn').addEventListener('click', startWithCountdown);
+document.getElementById('resetBtn').addEventListener('click', ()=> { stopAllGames(); showGameView(currentGame); notify('Reset'); });
 
 function startWithCountdown(){
-  if(!selected){ notice('Pick a princess first'); return; }
+  if(!selected){ notify('Pick a princess first'); selectModal.style.display='flex'; return; }
   let n = 3;
   document.getElementById('countdown').textContent = n;
-  const id = setInterval(()=>{ n--; document.getElementById('countdown').textContent = n>0 ? n : ''; if(n<0){ clearInterval(id); document.getElementById('countdown').textContent=''; actuallyStart(); } }, 700);
+  const cd = setInterval(()=> {
+    n--; document.getElementById('countdown').textContent = n>0 ? n : '';
+    if(n < 0){ clearInterval(cd); document.getElementById('countdown').textContent=''; actuallyStart(); }
+  }, 700);
 }
 function actuallyStart(){
-  if(currentGame === 'flappy'){ flappyState.running = true; flappyLoop(); notice('Flappy started'); }
-  if(currentGame === 'runner'){ runnerState.running = true; runnerLoop(); notice('Runner started'); }
-  if(currentGame === 'match'){ /* match active immediately */ notice('Match ready'); }
-  if(currentGame === 'path'){ pathState.running = true; pathLoop(); notice('Path running'); }
+  if(currentGame === 'flap'){ flapState.running = true; flapLoop(); notify('Flappy started'); }
+  if(currentGame === 'runner'){ runnerState.running = true; runnerLoop(); notify('Runner started'); }
+  if(currentGame === 'match'){ notify('Match ready'); }
+  if(currentGame === 'path'){ pathState.running = true; pathLoop(); notify('Draw path: draw ahead'); }
 }
 
-// ------------------ Reset current game ------------------
-function resetCurrentGame(){
-  cancelActiveAnimation();
-  // re-init each game state
-  if(currentGame === 'flappy') initFlappy();
-  if(currentGame === 'runner') initRunner();
-  if(currentGame === 'match') initMatch();
-  if(currentGame === 'path') initPath();
-  drawCurrentView();
-}
-
-// ------------------ DRAW CURRENT VIEW (initial) ------------------
-function drawCurrentView(){
-  if(currentGame === 'flappy') drawFlapOnce();
-  if(currentGame === 'runner') drawRunnerOnce();
-  if(currentGame === 'match') drawMatchOnce();
-  if(currentGame === 'path') drawPathOnce();
-}
-
-// ------------------ GAME: FLAPPY (functional) ------------------
-let flappyState = null;
-function initFlappy(){
-  flappyState = {
+// ------------------ GAME 1: FLAPPY PRINCESS ------------------
+let flapState = null;
+let flapInterval = null; // fallback interval for spawning
+function initFlap(){
+  flapState = {
     running:false,
-    princess:{x: Math.max(80, Math.floor(mainCanvas.width*0.12)), y: Math.floor(mainCanvas.height/2), vy:0, size:36},
-    gravity:0.9, flap:-9, dash:-16,
-    obstacles:[], frames:0, score:0, spawnRate:100
+    princess:{x: Math.floor(mainCanvas.width*0.15), y: Math.floor(mainCanvas.height/2), vy:0, r:28},
+    gravity:0.9, flapPower:-10, dashPower:-16,
+    obstacles:[], frames:0, score:0, spawnBase:100
   };
 }
-initFlappy();
+initFlap();
 
-function spawnFlappyObstacle(){
-  // spawn obstacle as simple icon position (x,y)
-  const y = 40 + Math.random()*(mainCanvas.height - 120);
-  flappyState.obstacles.push({x: mainCanvas.width + 40, y: y, w:36, h:36});
-}
-function flappyDash(){ if(!flappyState) return; flappyState.princess.vy = flappyState.dash; }
 function drawFlapOnce(){
   ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
-  ctx.fillStyle='#fff7ff'; ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
-  ctx.fillStyle='#fff'; ctx.fillRect(0, mainCanvas.height-60, mainCanvas.width, 60);
-  const p = flappyState.princess;
+  ctx.fillStyle = '#fff8fb'; ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
+  // ground
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, mainCanvas.height-60, mainCanvas.width, 60);
+  // princess
+  const p = flapState.princess;
   ctx.fillStyle = selected ? selected.color : '#ccc';
-  ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle='#fff'; ctx.font='12px sans-serif'; ctx.textAlign='center'; ctx.fillText(selected ? selected.name.slice(0,2).toUpperCase() : 'PR', p.x, p.y+4);
-  ctx.fillStyle='#6b2b4b'; ctx.font='28px serif';
-  // draw obstacles
-  flappyState.obstacles.forEach(o => ctx.fillText(objectToEmoji(selected?selected.object:'obj'), o.x, o.y));
-  ctx.fillStyle='#333'; ctx.font='14px sans-serif'; ctx.fillText(`Score: ${flappyState.score}`, 14, 18);
+  ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font='14px sans-serif'; ctx.textAlign='center'; ctx.fillText(selected ? selected.name.slice(0,2).toUpperCase() : 'PR', p.x, p.y+5);
+  // obstacles
+  ctx.font='28px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  flapState.obstacles.forEach(o => { ctx.fillStyle='#6b2b4b'; ctx.fillText(selected ? selected.emoji : '★', o.x, o.y); });
+  // hud
+  ctx.fillStyle = '#333'; ctx.font='14px sans-serif'; ctx.textAlign='left'; ctx.fillText(`Score: ${flapState.score}`, 12, 18);
 }
-function flappyUpdate(){
-  if(!flappyState.running) return;
-  flappyState.frames++;
-  // spawn depending on spawnRate
-  const rate = Math.max(40, flappyState.spawnRate - Math.floor(flappyState.score/6));
-  if(flappyState.frames % rate === 0) spawnFlappyObstacle();
+
+function spawnFlapObstacle(){
+  const y = 50 + Math.random()*(mainCanvas.height - 140);
+  flapState.obstacles.push({x: mainCanvas.width + 40, y: y, w:36, h:36});
+}
+
+function flappyPhysics(){
+  flapState.frames++;
+  // spawn
+  const rate = Math.max(45, flapState.spawnBase - Math.floor(flapState.score/6));
+  if(flapState.frames % rate === 0) spawnFlapObstacle();
   // physics
-  const p = flappyState.princess;
-  p.vy += flappyState.gravity * 0.6;
+  const p = flapState.princess;
+  p.vy += flapState.gravity * 0.6;
   p.y += p.vy;
   if(p.y > mainCanvas.height - 60) { p.y = mainCanvas.height - 60; p.vy = 0; }
-  if(p.y < 18) { p.y = 18; p.vy = 0; }
+  if(p.y < p.r) { p.y = p.r; p.vy = 0; }
   // move obstacles
-  for(let i=flappyState.obstacles.length-1;i>=0;i--){
-    const o = flappyState.obstacles[i];
-    o.x -= 3 + Math.min(3, flappyState.score/80);
-    if(o.x + o.w < -20){ flappyState.obstacles.splice(i,1); flappyState.score++; coins++; saveState(); updateHUD(); }
+  for(let i=flapState.obstacles.length-1;i>=0;i--){
+    const o = flapState.obstacles[i];
+    o.x -= 3 + Math.min(4, flapState.score/80);
+    if(o.x + o.w < -20){ flapState.obstacles.splice(i,1); flapState.score++; coins++; saveState(); updateHUD(); }
   }
-  // collision detection (tight hitbox)
-  const px = p.x - p.size*0.28, py = p.y - p.size*0.28, pw = p.size*0.56, ph = p.size*0.56;
-  for(const o of flappyState.obstacles){
-    const ox = o.x - o.w/2, oy = o.y - o.h/2, ow = o.w, oh = o.h;
+  // collision
+  const px = p.x - p.r*0.5, py = p.y - p.r*0.5, pw = p.r, ph = p.r;
+  for(const o of flapState.obstacles){
+    const ox = o.x - 18, oy = o.y - 18, ow = o.w, oh = o.h;
     if(px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy){
-      // collision
-      if(hearts > 0){ hearts--; saveState(); p.y = Math.floor(mainCanvas.height/2); flappyState.obstacles=[]; notice('Heart used'); return; }
+      if(hearts > 0){ hearts--; saveState(); p.y = Math.floor(mainCanvas.height/2); flapState.obstacles = []; notify('Heart used — returned to start'); return; }
       // keep-5 rule
       if(coins >= 15) coins = 5; else coins = 0;
       saveState(); updateHUD();
-      flappyState.running = false;
-      p.y = Math.floor(mainCanvas.height/2); flappyState.obstacles = [];
-      notice('Hit — back to start');
+      flapState.running = false;
+      p.y = Math.floor(mainCanvas.height/2);
+      flapState.obstacles = [];
+      notify('Hit — back to start');
       return;
     }
   }
 }
-function flappyLoop(){
-  cancelActiveAnimation(); // ensure only one loop
-  function frame(){
-    flappyUpdate(); drawFlapOnce();
-    activeAnimation = requestAnimationFrame(frame);
-  }
-  activeAnimation = requestAnimationFrame(frame);
-}
-function objectToEmoji(obj){
-  const map = {seashell:'🐚', snowflake:'❄️', wave:'🌊', sword:'🗡️', slipper:'👠', lizard:'🦎', frog:'🐸', book:'📖'};
-  return map[obj] || '★';
+
+function flapLoop(){
+  if(!flapState.running) return;
+  flappyPhysics();
+  drawFlapOnce();
+  rafHandle = requestAnimationFrame(flapLoop);
 }
 
-// handle spacebar for flappy (and runner jump)
+// controls for flap
+function doFlapDash(){ if(!flapState) return; flapState.princess.vy = flapState.dashPower || -16; }
 window.addEventListener('keydown', (e)=> {
   if(e.code === 'Space'){
-    if(currentGame === 'flappy' && flappyState && flappyState.running){ flappyState.princess.vy = flappyState.flap; e.preventDefault(); }
+    if(currentGame === 'flap' && flapState && flapState.running){ flapState.princess.vy = flapState.flapPower; e.preventDefault(); }
     if(currentGame === 'runner' && runnerState && runnerState.running){ triggerRunnerJump(); e.preventDefault(); }
   }
 });
-mainCanvas.addEventListener('pointerdown', (e)=> { if(currentGame === 'flappy' && flappyState && flappyState.running) flappyState.princess.vy = flappyState.flap; });
+mainCanvas.addEventListener('pointerdown', (e)=> { if(currentGame === 'flap' && flapState && flapState.running) flapState.princess.vy = flapState.flapPower; });
 
-// ------------------ GAME: RUNNER (functional) ------------------
+// ---------- GAME 2: RUNNER ----------
 let runnerState = null;
+let runnerInterval = null;
 function initRunner(){
   runnerState = {
     running:false,
@@ -387,6 +396,7 @@ initRunner();
 
 function spawnRunnerObstacle(){ runnerState.obstacles.push({x: mainCanvas.width + 40, y: mainCanvas.height - 86 - 6, w:36, h:36}); }
 function spawnRunnerCoin(){ runnerState.coinsOnTrack.push({x: mainCanvas.width + 60, y: mainCanvas.height - 86 - 60, r:8}); }
+
 function runnerUpdate(){
   if(!runnerState.running) return;
   runnerState.frames++;
@@ -396,27 +406,27 @@ function runnerUpdate(){
   runnerState.player.vy += runnerState.gravity;
   runnerState.player.y += runnerState.player.vy;
   if(runnerState.player.y > mainCanvas.height - 86) { runnerState.player.y = mainCanvas.height - 86; runnerState.player.vy = 0; }
-  // move obstacles and coins
+  // move obstacles
   for(let i=runnerState.obstacles.length-1;i>=0;i--){
     const o = runnerState.obstacles[i]; o.x -= 4 + Math.min(3, runnerState.score/100);
     if(o.x + o.w < -20){ runnerState.obstacles.splice(i,1); runnerState.score++; coins++; saveState(); updateHUD(); }
   }
   for(let i=runnerState.coinsOnTrack.length-1;i>=0;i--){
     const c = runnerState.coinsOnTrack[i]; c.x -= 3; const dx = c.x - (runnerState.player.x + runnerState.player.w/2); const dy = c.y - (runnerState.player.y + runnerState.player.h/2);
-    if(Math.hypot(dx,dy) < 22){ runnerState.coinsOnTrack.splice(i,1); coins++; saveState(); updateHUD(); notice('+1 coin'); }
+    if(Math.hypot(dx,dy) < 22){ runnerState.coinsOnTrack.splice(i,1); coins++; saveState(); updateHUD(); notify('+1 coin'); }
     if(c.x < -20) runnerState.coinsOnTrack.splice(i,1);
   }
-  // collision (tight hitbox)
-  const px = runnerState.player.x + runnerState.player.w*0.15, py = runnerState.player.y + runnerState.player.h*0.1, pw = runnerState.player.w*0.7, ph = runnerState.player.h*0.8;
+  // collision
+  const px = runnerState.player.x + runnerState.player.w*0.15, py = runnerState.player.y + runnerState.player.h*0.08, pw = runnerState.player.w*0.7, ph = runnerState.player.h*0.84;
   for(const o of runnerState.obstacles){
     if(px < o.x + o.w && px + pw > o.x && py < o.y + o.h && py + ph > o.y){
-      if(hearts > 0){ hearts--; saveState(); runnerState.obstacles=[]; runnerState.player.y = mainCanvas.height - 86; notice('Heart used'); return; }
+      if(hearts > 0){ hearts--; saveState(); runnerState.obstacles=[]; runnerState.player.y = mainCanvas.height - 86; notify('Heart used'); return; }
       if(coins >= 15) coins = 5; else coins = 0; saveState(); updateHUD();
-      runnerState.running = false; runnerState.obstacles = []; runnerState.player.y = mainCanvas.height - 86; notice('Hit — back to start');
-      return;
+      runnerState.running = false; runnerState.obstacles = []; runnerState.player.y = mainCanvas.height - 86; notify('Hit — back to start'); return;
     }
   }
 }
+
 function drawRunnerOnce(){
   ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
   ctx.fillStyle = '#fff8fb'; ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
@@ -430,200 +440,172 @@ function drawRunnerOnce(){
   ctx.fillStyle = '#7a1b5a'; runnerState.obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
   // coins
   ctx.fillStyle = '#ffd34d'; runnerState.coinsOnTrack.forEach(c =>{ ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill(); });
-  ctx.fillStyle='#333'; ctx.font='14px sans-serif'; ctx.fillText(`Distance: ${runnerState.score}`, 12, 18);
+  ctx.fillStyle='#333'; ctx.font='14px sans-serif'; ctx.textAlign='left'; ctx.fillText(`Distance: ${runnerState.score}`, 12, 18);
 }
+
 function runnerLoop(){
-  cancelActiveAnimation();
-  function frame(){
-    runnerUpdate(); drawRunnerOnce();
-    activeAnimation = requestAnimationFrame(frame);
-  }
-  activeAnimation = requestAnimationFrame(frame);
+  if(!runnerState.running) return;
+  runnerUpdate(); drawRunnerOnce();
+  rafHandle = requestAnimationFrame(runnerLoop);
 }
-function triggerRunnerJump(){ if(runnerState.player.y >= mainCanvas.height - 86) runnerState.player.vy = runnerState.jump; }
-function drawRunnerOnce(){} // placeholder to satisfy earlier calls; real drawRunnerOnce defined above
 
-// pointertap jump
-mainCanvas.addEventListener('pointerdown', (e)=>{ if(currentGame === 'runner' && runnerState && runnerState.running){ triggerRunnerJump(); } });
+function triggerRunnerJump(){ if(!runnerState) return; if(runnerState.player.y >= mainCanvas.height - 86) runnerState.player.vy = runnerState.jump; }
+mainCanvas.addEventListener('pointerdown', (e)=>{ if(currentGame === 'runner' && runnerState && runnerState.running) triggerRunnerJump(); });
 
-// ------------------ GAME: MATCH (functional) ------------------
+// ---------- GAME 3: MATCH ----------
 let matchState = null;
 function initMatch(){
   matchBoard.style.display = 'flex';
-  // create deck of 6 objects x2
-  const objs = ['seashell','snowflake','wave','sword','slipper','lizard'];
+  const matchBoardDiv = document.getElementById('matchBoard');
+  matchBoardDiv.innerHTML = '';
+  const objs = PRINCESSES.map(p=>p.emoji).slice(0,6);
   let deck = objs.concat(objs);
   // shuffle
-  for(let i=0;i<300;i++){ const a=Math.floor(Math.random()*12), b=Math.floor(Math.random()*12); [deck[a],deck[b]]=[deck[b],deck[a]]; }
+  for(let i=0;i<300;i++){ const a=Math.floor(Math.random()*deck.length), b=Math.floor(Math.random()*deck.length); [deck[a],deck[b]]=[deck[b],deck[a]]; }
   matchState = {cards: deck.map((o,i)=>({id:i,obj:o,face:false,dead:false})), flipped:[], removed:0};
   renderMatch();
 }
 function renderMatch(){
-  matchBoard.innerHTML = '';
+  const matchBoardDiv = document.getElementById('matchBoard');
+  matchBoardDiv.innerHTML = '';
   matchState.cards.forEach((c,i)=>{
-    const el = document.createElement('div');
-    el.className = 'match-card';
-    el.dataset.idx = i;
-    if(c.dead){ el.style.visibility='hidden'; } else if(c.face){ el.textContent = emojiFor(c.obj); } else { el.textContent = ''; }
-    el.addEventListener('click', ()=> onMatchClick(i));
-    matchBoard.appendChild(el);
+    const el = document.createElement('div'); el.className='card';
+    if(c.dead){ el.style.visibility='hidden'; } else if(c.face){ el.textContent = c.obj; } else { el.textContent = '?'; }
+    el.addEventListener('click', ()=> flipCard(i));
+    matchBoardDiv.appendChild(el);
   });
 }
-function onMatchClick(i){
+function flipCard(i){
   const card = matchState.cards[i];
   if(card.dead || card.face) return;
   card.face = true; matchState.flipped.push(card); renderMatch();
   if(matchState.flipped.length === 2){
     const [a,b] = matchState.flipped;
     if(a.obj === b.obj){
-      a.dead = true; b.dead = true; matchState.removed += 2; coins += 3; saveState(); updateHUD(); notice('+3 coins'); matchState.flipped = []; renderMatch();
-      if(matchState.removed === 12){ coins += 10; saveState(); updateHUD(); notice('All pairs cleared! +10 coins'); }
+      a.dead = true; b.dead = true; matchState.removed += 2; coins += 3; saveState(); updateHUD(); notify('+3 coins'); matchState.flipped = []; renderMatch();
+      if(matchState.removed === matchState.cards.length){ coins += 10; saveState(); updateHUD(); notify('All pairs cleared! +10 coins'); }
     } else {
       setTimeout(()=>{ a.face=false; b.face=false; matchState.flipped = []; renderMatch(); }, 700);
     }
   }
 }
-function emojiFor(obj){
-  const map = {seashell:'🐚', snowflake:'❄️', wave:'🌊', sword:'🗡️', slipper:'👠', lizard:'🦎', frog:'🐸', book:'📖'};
-  return map[obj] || '★';
-}
-initMatch();
 
-// ------------------ GAME: PATH (endless, functional) ------------------
+// ---------- GAME 4: DRAW-A-PATH (endless) ----------
 let pathState = null;
+let pathInterval = null;
 function initPath(){
   pathState = {
     running:false,
-    points:[], // drawn points in world coordinates
-    car:{x:120, y: drawCanvas.height/2, r:14},
-    worldOffset:0, // how far the world has scrolled
+    points:[], // world coordinates
+    car:{x:120,y: drawCanvas.height/2, r:14},
+    worldOffset:0,
     obstacles:[], spawnTick:0, speed:2
   };
   // initial obstacles
   for(let i=0;i<6;i++){
-    pathState.obstacles.push({x: 600 + i*300 + Math.random()*180, y: 80 + Math.random()*(drawCanvas.height - 160), w:40 + Math.random()*60, h:30 + Math.random()*40});
+    pathState.obstacles.push({x: 600 + i*300 + Math.random()*160, y: 80 + Math.random()*(drawCanvas.height - 160), w:40 + Math.random()*60, h:30 + Math.random()*40});
   }
-  drawPathOnce();
 }
 initPath();
 
+function worldToScreen(p){ return {x: p.x - pathState.worldOffset, y: p.y}; }
 function drawPathOnce(){
   dctx.clearRect(0,0,drawCanvas.width, drawCanvas.height);
   dctx.fillStyle = '#fff7ff'; dctx.fillRect(0,0,drawCanvas.width, drawCanvas.height);
-  // draw points as a line
+  // path line
   if(pathState.points.length > 1){
     dctx.strokeStyle = '#ff9ab2'; dctx.lineWidth = 6; dctx.beginPath();
-    const p0 = worldToScreen(pathState.points[0]);
-    dctx.moveTo(p0.x,p0.y);
+    const p0 = worldToScreen(pathState.points[0]); dctx.moveTo(p0.x, p0.y);
     for(let i=1;i<pathState.points.length;i++){ const p = worldToScreen(pathState.points[i]); dctx.lineTo(p.x,p.y); }
     dctx.stroke();
   }
-  // draw obstacles relative to worldOffset
+  // obstacles
   dctx.fillStyle = '#7a1b5a';
   pathState.obstacles.forEach(ob => {
     const sx = ob.x - pathState.worldOffset;
     dctx.fillRect(sx, ob.y, ob.w, ob.h);
   });
-  // draw car
+  // car
   dctx.fillStyle = selected ? selected.color : '#ccc';
   dctx.beginPath(); dctx.arc(pathState.car.x, pathState.car.y, pathState.car.r, 0, Math.PI*2); dctx.fill();
   dctx.fillStyle='#fff'; dctx.font='12px sans-serif'; dctx.textAlign='center'; dctx.textBaseline='middle';
   dctx.fillText(selected ? selected.name.slice(0,2).toUpperCase() : 'PR', pathState.car.x, pathState.car.y);
 }
 
-function worldToScreen(p){ return {x: p.x - pathState.worldOffset, y: p.y}; }
-
 drawCanvas.addEventListener('pointerdown', (e)=> {
   if(currentGame !== 'path') return;
-  drawing = true;
   const rect = drawCanvas.getBoundingClientRect();
   const x = (e.clientX - rect.left) * (drawCanvas.width / rect.width) + pathState.worldOffset;
   const y = (e.clientY - rect.top) * (drawCanvas.height / rect.height);
   pathState.points.push({x,y});
 });
-let drawing = false;
 drawCanvas.addEventListener('pointermove', (e)=> {
-  if(!drawing || currentGame !== 'path') return;
+  if(currentGame !== 'path' || !(e.buttons || e.touches)) return;
   const rect = drawCanvas.getBoundingClientRect();
   const x = (e.clientX - rect.left) * (drawCanvas.width / rect.width) + pathState.worldOffset;
   const y = (e.clientY - rect.top) * (drawCanvas.height / rect.height);
   pathState.points.push({x,y});
-  if(pathState.points.length > 800) pathState.points.shift();
+  if(pathState.points.length > 1000) pathState.points.shift();
   drawPathOnce();
 });
 drawCanvas.addEventListener('pointerup', ()=> {
-  drawing = false;
-  // if not running, start movement
-  if(!pathState.running){ pathState.running = true; pathLoop(); notice('Path started'); }
+  if(!pathState.running){ pathState.running = true; pathLoop(); notify('Path running'); }
 });
 
-// path loop: worldOffset increases, car follows nearest point ahead
 function pathLoop(){
-  cancelActiveAnimation();
-  function frame(){
-    // scroll world
-    pathState.worldOffset += pathState.speed;
-    // speed ramp up slowly
-    pathState.spawnTick += pathState.speed;
-    if(pathState.spawnTick > 300){
-      pathState.spawnTick = 0;
-      const lastX = pathState.obstacles.length ? pathState.obstacles[pathState.obstacles.length-1].x + 200 + Math.random()*200 : pathState.worldOffset + 900;
-      pathState.obstacles.push({x: lastX, y: 60 + Math.random()*(drawCanvas.height - 140), w:40 + Math.random()*60, h:30 + Math.random()*40});
-      pathState.speed = Math.min(6, pathState.speed + 0.05);
-    }
-    // move car toward next point ahead (find the first point with worldX > worldOffset + car.x)
-    if(pathState.points.length > 0){
-      // find a target index that is ahead of the car (world coords)
-      let targetIndex = 0;
-      while(targetIndex < pathState.points.length && pathState.points[targetIndex].x < pathState.worldOffset + pathState.car.x) targetIndex++;
-      if(targetIndex >= pathState.points.length) targetIndex = pathState.points.length - 1;
-      const target = pathState.points[targetIndex];
-      // smooth follow
-      const tx = target.x - pathState.worldOffset;
-      const ty = target.y;
-      pathState.car.x += (tx - pathState.car.x) * 0.12;
-      pathState.car.y += (ty - pathState.car.y) * 0.12;
-      // if target reached, shift some points
-      if(Math.hypot(tx - pathState.car.x, ty - pathState.car.y) < 6) {
-        // remove earlier points to keep memory low
-        pathState.points = pathState.points.slice(Math.max(0, targetIndex - 2));
-      }
-    } else {
-      // drift forward a bit
-      pathState.car.x += 0.6;
-    }
-    // collision detect (compare car to obstacles at screen position)
-    for(const ob of pathState.obstacles){
-      const sx = ob.x - pathState.worldOffset;
-      if(pathState.car.x + pathState.car.r > sx && pathState.car.x - pathState.car.r < sx + ob.w &&
-         pathState.car.y + pathState.car.r > ob.y && pathState.car.y - pathState.car.r < ob.y + ob.h){
-        // hit!
-        if(hearts > 0){ hearts--; saveState(); pathState.car.x = 120; pathState.car.y = drawCanvas.height/2; pathState.points = []; pathState.running=false; notice('Heart used — returned to start'); return; }
-        if(coins >= 15) coins = 5; else coins = 0; saveState(); updateHUD();
-        pathState.car.x = 120; pathState.car.y = drawCanvas.height/2; pathState.points = []; pathState.running=false; notice('Hit obstacle — back to start'); return;
-      }
-    }
-    drawPathOnce();
-    activeAnimation = requestAnimationFrame(frame);
+  if(!pathState.running) return;
+  // scroll world
+  pathState.worldOffset += pathState.speed;
+  pathState.spawnTick += pathState.speed;
+  if(pathState.spawnTick > 300){
+    pathState.spawnTick = 0;
+    const lastX = pathState.obstacles.length ? pathState.obstacles[pathState.obstacles.length-1].x + 200 + Math.random()*200 : pathState.worldOffset + 900;
+    pathState.obstacles.push({x:lastX, y:60 + Math.random()*(drawCanvas.height-140), w:40 + Math.random()*60, h:30 + Math.random()*40});
+    pathState.speed = Math.min(6, pathState.speed + 0.05);
   }
-  activeAnimation = requestAnimationFrame(frame);
+  // follow next point ahead
+  if(pathState.points.length > 0){
+    let targetIndex = 0;
+    while(targetIndex < pathState.points.length && pathState.points[targetIndex].x < pathState.worldOffset + pathState.car.x) targetIndex++;
+    if(targetIndex >= pathState.points.length) targetIndex = pathState.points.length - 1;
+    const target = pathState.points[targetIndex];
+    const tx = target.x - pathState.worldOffset;
+    const ty = target.y;
+    pathState.car.x += (tx - pathState.car.x) * 0.12;
+    pathState.car.y += (ty - pathState.car.y) * 0.12;
+    if(Math.hypot(tx - pathState.car.x, ty - pathState.car.y) < 6) {
+      pathState.points = pathState.points.slice(Math.max(0, targetIndex - 2));
+    }
+  } else {
+    pathState.car.x += 0.6;
+  }
+  // collision
+  for(const ob of pathState.obstacles){
+    const sx = ob.x - pathState.worldOffset;
+    if(pathState.car.x + pathState.car.r > sx && pathState.car.x - pathState.car.r < sx + ob.w &&
+       pathState.car.y + pathState.car.r > ob.y && pathState.car.y - pathState.car.r < ob.y + ob.h){
+      if(hearts > 0){ hearts--; saveState(); pathState.car.x = 120; pathState.car.y = drawCanvas.height/2; pathState.points = []; pathState.running = false; notify('Heart used'); return; }
+      if(coins >= 15) coins = 5; else coins = 0; saveState(); updateHUD();
+      pathState.car.x = 120; pathState.car.y = drawCanvas.height/2; pathState.points = []; pathState.running = false; notify('Hit obstacle — back to start'); return;
+    }
+  }
+  drawPathOnce();
+  rafHandle = requestAnimationFrame(pathLoop);
 }
 
-// ------------------ Helpers ------------------
-function drawCurrentView(){
-  if(currentGame === 'flappy'){ drawFlapOnce(); }
-  if(currentGame === 'runner'){ drawRunnerOnce(); }
-  if(currentGame === 'match'){ renderMatch(); }
-  if(currentGame === 'path'){ drawPathOnce(); }
-}
+// ---------- Helpers ----------
+function saveState(){ localStorage.setItem('pa_coins', coins); localStorage.setItem('pa_hearts', hearts); updateHUD(); }
+function updateHUD(){ coinsEl.textContent = coins; heartsEl.textContent = hearts; }
 
-// initialize & wire start
-fitCanvases();
-resetCurrentGame(); // set up initial states
+// ---------- drawCurrentView and initialization ----------
+function drawCurrentView(){ if(currentGame === 'flap') drawFlapOnce(); if(currentGame === 'runner') drawRunnerOnce(); if(currentGame === 'match') renderMatch(); if(currentGame === 'path') drawPathOnce(); }
+fitAndStart();
+function fitAndStart(){ fitCanvases(); showGameView('flap'); setupObjectButton(); initMatch(); }
 
-// ensure saving on unload
+// --------- Stop on page unload ----------
 window.addEventListener('beforeunload', ()=> saveState());
 
 </script>
 </body>
 </html>
+
