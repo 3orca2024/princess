@@ -1,248 +1,680 @@
-<!DOCTYPE html>
+```html
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Princess Arcade</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Comic Sans MS", cursive, sans-serif;
-      background: #ffe4f2;
-      text-align: center;
-    }
-    header {
-      background: #ff99cc;
-      padding: 15px;
-      font-size: 24px;
-      color: white;
-    }
-    nav {
-      margin: 10px;
-    }
-    nav button {
-      margin: 5px;
-      padding: 10px 20px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      background: white;
-      box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
-    }
-    section {
-      display: none;
-      padding: 20px;
-    }
-    canvas {
-      border: 2px solid #333;
-      background: #fce4ec;
-      margin-top: 10px;
-    }
-    #store, #instructions {
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-      width: 60%;
-      margin: 20px auto;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
-    }
-    #stats {
-      margin: 10px;
-      font-size: 18px;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Princess Arcade — Remix (Single File)</title>
+<meta name="description" content="Princess Arcade — Flappy, Runner, Match, Draw-Path. Coins & Hearts store. Mobile friendly." />
+<style>
+  :root{
+    --bg:#fff0fb; --panel:#fff; --accent:#ff6aa6; --muted:#5b3b51;
+    --card-shadow: 0 14px 36px rgba(98,50,80,0.08);
+    --glass: rgba(255,255,255,0.85);
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:linear-gradient(180deg,var(--bg),#fff);-webkit-font-smoothing:antialiased}
+  .app{max-width:1180px;margin:18px auto;padding:18px;background:var(--glass);border-radius:14px;box-shadow:var(--card-shadow)}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  h1{margin:0;color:var(--muted);font-size:20px}
+  .top-right{display:flex;gap:8px;align-items:center}
+  .badge{background:white;padding:8px 12px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.06);font-weight:700}
+  .prin-bar{display:flex;gap:8px;overflow:auto;padding:10px;margin-top:12px;border-radius:12px;background:linear-gradient(90deg,#fff,#fff0)}
+  .prin-item{flex:0 0 auto;background:var(--panel);border-radius:10px;padding:8px;width:150px;cursor:pointer;border:2px solid transparent;transition:transform .16s,box-shadow .16s}
+  .prin-item.selected{transform:translateY(-8px);border-color:var(--accent);box-shadow:0 12px 28px rgba(255,106,166,0.14)}
+  .prin-name{font-weight:700;color:var(--muted);margin-top:6px}
+  .prin-sub{font-size:13px;color:#6b4a62;margin-top:4px}
+  .main{display:flex;gap:14px;margin-top:14px}
+  .left{flex:1}
+  .right{width:360px}
+  .card{background:linear-gradient(180deg,#fff,#fff0);padding:12px;border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,0.06)}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{padding:8px 10px;border-radius:8px;background:#fff;border:1px solid #eee;cursor:pointer}
+  .tab.active{background:linear-gradient(180deg,var(--accent),#ff3f8f);color:white;border:none}
+  canvas{width:100%;height:360px;border-radius:10px;background:transparent;display:block;touch-action:none}
+  #drawCanvas{height:420px}
+  .hud{display:flex;gap:12px;align-items:center;margin-top:8px}
+  .btn{padding:8px 12px;border-radius:10px;border:none;background:var(--accent);color:white;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid #eee;color:#333}
+  .instructions{margin-top:10px;padding:10px;border-radius:10px;background:#fff}
+  #shopModal,#instrModal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:600}
+  .modalCard{width:90%;max-width:720px;background:white;padding:18px;border-radius:12px;max-height:80vh;overflow:auto}
+  .notify{position:fixed;left:50%;transform:translateX(-50%);top:18px;background:linear-gradient(90deg,#fff,#fff0);padding:8px 14px;border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,0.12);display:none;z-index:700}
+  .object-button{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:#fff;border:1px solid #eee;cursor:pointer}
+  .object-button .dot{width:20px;height:20px;border-radius:6px;display:inline-block}
+  footer{margin-top:12px;color:#806070;font-size:13px}
+  @media (max-width:980px){.main{flex-direction:column}.right{width:100%}canvas{height:300px}}
+</style>
 </head>
 <body>
-<header>👑 Princess Arcade 👑</header>
-<nav>
-  <button onclick="showSection('flappy')">Flappy Princess</button>
-  <button onclick="showSection('runner')">Princess Runner</button>
-  <button onclick="showSection('match')">Princess Match</button>
-  <button onclick="showSection('path')">Princess Path</button>
-  <button onclick="showSection('store')">Store</button>
-  <button onclick="showSection('instructions')">Instructions</button>
-</nav>
+<div class="app" id="app">
+  <header>
+    <div>
+      <h1>Princess Arcade — Flow Edition</h1>
+      <div style="font-size:13px;color:#6b4a62">Pick a princess (name + object) — play anywhere (mobile-ready)</div>
+    </div>
+    <div class="top-right">
+      <div class="badge">Coins: <span id="coins">0</span></div>
+      <div class="badge">Hearts: <span id="hearts">0</span></div>
+      <button id="openShop" class="btn">Shop</button>
+      <button id="openInstr" class="btn ghost">Instructions</button>
+    </div>
+  </header>
 
-<div id="stats">Coins: <span id="coinCount">0</span> | Hearts: <span id="heartCount">0</span></div>
+  <!-- Princess options: name + object (no image selector) -->
+  <div class="prin-bar" id="prinBar" aria-label="Princess picker">
+    <!-- items generated by JS with SVG thumbnails -->
+  </div>
 
-<!-- Flappy Princess -->
-<section id="flappy">
-  <h2>Flappy Princess</h2>
-  <p>Press SPACE to fly your princess around obstacles!</p>
-  <canvas id="flappyCanvas" width="600" height="400"></canvas>
-</section>
+  <div style="margin-top:12px" class="card">
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-game="flap">Flappy Princess</div>
+      <div class="tab" data-game="runner">Princess Runner</div>
+      <div class="tab" data-game="match">Match Game</div>
+      <div class="tab" data-game="path">Draw-a-Path (Endless)</div>
+    </div>
 
-<!-- Runner -->
-<section id="runner">
-  <h2>Princess Runner</h2>
-  <p>Click to jump and avoid obstacles after the countdown!</p>
-  <canvas id="runnerCanvas" width="600" height="400"></canvas>
-</section>
+    <div class="main">
+      <div class="left">
+        <div class="card" style="padding:12px">
+          <canvas id="mainCanvas" width="900" height="360"></canvas>
+          <canvas id="drawCanvas" width="900" height="420" style="display:none;margin-top:8px;border-radius:8px;"></canvas>
 
-<!-- Match Game -->
-<section id="match">
-  <h2>Princess Match Game</h2>
-  <p>Flip cards and match the princess objects!</p>
-  <div id="matchBoard"></div>
-</section>
+          <div class="hud" style="margin-top:8px;">
+            <div class="small">Selected: <strong id="selName">None</strong> (<span id="selObject">—</span>)</div>
+            <div style="flex:1"></div>
+            <div id="countdown" style="font-weight:700;color:#6b4a62"></div>
+            <button id="startBtn" class="btn">Start</button>
+            <button id="resetBtn" class="btn ghost">Reset</button>
+          </div>
 
-<!-- Path Game -->
-<section id="path">
-  <h2>Princess Path</h2>
-  <p>Draw a path with your mouse/finger, the princess will follow. Avoid obstacles!</p>
-  <canvas id="pathCanvas" width="600" height="400"></canvas>
-</section>
+          <div class="instructions" id="instrText">
+            Choose a game & princess (name + object). Press Start. Use space / on-screen object button where applicable.
+          </div>
 
-<!-- Store -->
-<section id="store">
-  <h2>Heart Store</h2>
-  <p>Earn coins by playing games. Buy hearts here!</p>
-  <p>30 coins = 1 heart</p>
-  <button onclick="buyHeart()">Buy Heart</button>
-</section>
+        </div>
+      </div>
 
-<!-- Instructions -->
-<section id="instructions">
-  <h2>How to Play</h2>
-  <ul style="text-align:left;">
-    <li><b>Flappy Princess:</b> Press SPACE to flap around obstacles (unique to each princess!).</li>
-    <li><b>Princess Runner:</b> Countdown starts, then click to jump and dodge obstacles.</li>
-    <li><b>Princess Match:</b> Flip two cards, match princess objects to clear them.</li>
-    <li><b>Princess Path:</b> Draw a path for the princess-car to follow, avoid obstacles as it scrolls endlessly.</li>
-    <li><b>Store:</b> Spend your coins to buy hearts. Hearts help you stay in the game longer.</li>
-  </ul>
-</section>
+      <div class="right">
+        <div class="card">
+          <h4 style="margin:0">Quick Controls</h4>
+          <div style="margin-top:8px" id="objectControlArea">
+            <!-- object button appears here for Flappy -->
+          </div>
+          <div style="height:12px"></div>
+          <div class="card" style="margin-top:8px">
+            <h5 style="margin:6px 0">Match Game</h5>
+            <div class="small">12 cards — 6 pairs of princess objects</div>
+            <div style="height:8px"></div>
+            <div id="matchPanel"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>Made for Parker — play on the go, be trendy, and have fun! 💖</footer>
+  </div>
+</div>
+
+<!-- Shop & Instructions modals -->
+<div id="shopModal"><div class="modalCard">
+  <h3>Shop — Hearts</h3>
+  <p class="small">Hearts cost <strong>30 coins</strong>. Hearts let your princess survive one hit and return to the start.</p>
+  <p class="small">You have <strong id="modalCoins">0</strong> coins and <strong id="modalHearts">0</strong> hearts.</p>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+    <button id="buyHeart" class="btn">Buy Heart (30)</button>
+    <button id="closeShop" class="btn ghost">Close</button>
+  </div>
+</div></div>
+
+<div id="instrModal"><div class="modalCard">
+  <h3>Instructions</h3>
+  <div class="small" style="line-height:1.5">
+    <strong>Flappy Princess:</strong> Press SPACE or tap the princess's object button to perform an avoidance move (a short dash/up-flap). Obstacles show the same object; use the object control to dodge smoothly. Hitting an obstacle returns you to start (or consumes a heart if you have one). Passing obstacles gives coins.<br><br>
+    <strong>Runner:</strong> Countdown 3-2-1 then press SPACE / tap to jump. Smooth collision; hit = back to start (or heart used).<br><br>
+    <strong>Match Game:</strong> Tap two cards; if they match they disappear. Clear all pairs to win coins.<br><br>
+    <strong>Draw-a-Path (Endless):</strong> Draw in front of the moving world. The world scrolls continuously — draw a path ahead so the princess-car avoids obstacles. The level speeds up over time. Collect coins placed on the track.<br><br>
+    Coins persist and can be spent in the shop. Have fun!
+  </div>
+  <div style="text-align:right;margin-top:12px"><button id="closeInstrBtn" class="btn">Close</button></div>
+</div></div>
+
+<div id="notify" class="notify"></div>
 
 <script>
-let coins = 0;
-let hearts = 0;
-function updateStats() {
-  document.getElementById("coinCount").innerText = coins;
-  document.getElementById("heartCount").innerText = hearts;
+/* Princess Arcade — Single file final
+   - Flappy: object button + space to avoid obstacles (obstacles show object)
+   - Runner: countdown + jump (space / tap)
+   - Match: 12 cards (6 pairs) flip & match
+   - Path: endless horizontally scrolling world, draw a safe route ahead; world keeps moving
+   - Shop: buy hearts with coins (30 each)
+   - No alerts; in-page notifications
+   - Names + objects listed; user picks by clicking the card
+   - Mobile-friendly touch controls
+*/
+
+// ---------- Utilities & persistence ----------
+const notifyEl = document.getElementById('notify');
+function notify(msg, t=1800){ notifyEl.textContent=msg; notifyEl.style.display='block'; clearTimeout(notifyEl._t); notifyEl._t=setTimeout(()=>notifyEl.style.display='none', t); }
+
+let coins = Number(localStorage.getItem('arc_coins') || 0);
+let hearts = Number(localStorage.getItem('arc_hearts') || 0);
+function save(){ localStorage.setItem('arc_coins', coins); localStorage.setItem('arc_hearts', hearts); updateHUD(); }
+function updateHUD(){ document.getElementById('coins').textContent = coins; document.getElementById('hearts').textContent = hearts; document.getElementById('modalCoins').textContent = coins; document.getElementById('modalHearts').textContent = hearts; }
+updateHUD();
+
+// ---------- Princess list (name + object) ----------
+const PRINCESSES = [
+  {name:'Ariel', object:'seashell', color:'#ff7fbf'},
+  {name:'Elsa', object:'snowflake', color:'#cfe7ff'},
+  {name:'Moana', object:'wave', color:'#9fd4ff'},
+  {name:'Mulan', object:'sword', color:'#ffd6e9'},
+  {name:'Cinderella', object:'slipper', color:'#cfe0ff'},
+  {name:'Rapunzel', object:'lizard', color:'#f7d06a'},
+  {name:'Tiana', object:'frog', color:'#9be9b6'},
+  {name:'Belle', object:'book', color:'#ffd07a'}
+];
+
+const prinBar = document.getElementById('prinBar');
+let selected = null;
+function makeThumb(name, color, object){
+  // small inline SVG thumb as Data URI
+  const initials = name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='120'>
+    <rect rx='12' width='100%' height='100%' fill='${color}' />
+    <circle cx='42' cy='60' r='34' fill='rgba(255,255,255,0.12)'/>
+    <text x='42' y='66' font-size='28' font-family='Arial' text-anchor='middle' fill='white' font-weight='700'>${initials}</text>
+    <text x='130' y='52' font-size='16' font-family='Arial' fill='white' font-weight='700'>${name}</text>
+    <text x='130' y='82' font-size='13' font-family='Arial' fill='rgba(255,255,255,0.95)'>object: ${object}</text>
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
-function buyHeart() {
-  if (coins >= 30) {
-    coins -= 30;
-    hearts++;
-    updateStats();
+
+PRINCESSES.forEach(p=>{
+  const el = document.createElement('div');
+  el.className = 'prin-item';
+  el.innerHTML = `<img src="${makeThumb(p.name,p.color,p.object)}" alt="${p.name}" style="width:100%;border-radius:8px"><div class="prin-name">${p.name}</div><div class="prin-sub">Object: ${p.object}</div>`;
+  el.addEventListener('click', ()=> {
+    document.querySelectorAll('.prin-item').forEach(x=>x.classList.remove('selected'));
+    el.classList.add('selected');
+    selected = {...p, svg: makeThumb(p.name,p.color,p.object)};
+    document.getElementById('selName').textContent = selected.name;
+    document.getElementById('selObject').textContent = selected.object;
+    setupObjectControl(); notify(`${selected.name} selected` ,1000);
+  });
+  prinBar.appendChild(el);
+});
+
+// ---------- Tabs ----------
+let currentGame = 'flap';
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=> {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    currentGame = t.dataset.game;
+    prepareView();
+  });
+});
+
+// ---------- Modals ----------
+document.getElementById('openShop').addEventListener('click', ()=> { updateHUD(); document.getElementById('shopModal').style.display='flex'; });
+document.getElementById('closeShop').addEventListener('click', ()=> document.getElementById('shopModal').style.display='none');
+document.getElementById('openInstr').addEventListener('click', ()=> document.getElementById('instrModal').style.display='flex');
+document.getElementById('closeInstrBtn').addEventListener('click', ()=> document.getElementById('instrModal').style.display='none');
+document.getElementById('buyHeart').addEventListener('click', ()=> {
+  if(coins >= 30){ coins -= 30; hearts++; save(); notify('Heart bought'); } else notify('Need 30 coins');
+});
+
+// ---------- Controls area (object button) ----------
+const objectControlArea = document.getElementById('objectControlArea');
+let objectBtn = null;
+function setupObjectControl(){
+  objectControlArea.innerHTML = '';
+  if(!selected) return;
+  objectBtn = document.createElement('button');
+  objectBtn.className = 'object-button';
+  objectBtn.innerHTML = `<span class="dot" style="background:${selected.color}"></span><span style="font-weight:700">${selected.object}</span>`;
+  objectBtn.addEventListener('click', ()=> {
+    // dispatch action depending on game (Flap uses this as the primary avoid control)
+    if(currentGame === 'flap') flapDoAvoid();
+    if(currentGame === 'path') { /* optionally draw boost */ }
+  });
+  objectControlArea.appendChild(objectBtn);
+}
+
+// ---------- Draw / main canvases ----------
+const mainCanvas = document.getElementById('mainCanvas');
+const ctx = mainCanvas.getContext('2d');
+const drawCanvas = document.getElementById('drawCanvas');
+const dctx = drawCanvas.getContext('2d');
+
+// keep mobile DPI crisp
+function fixDPR(canvas, ctx, w, h){
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+fixDPR(mainCanvas, ctx, 900, 360);
+fixDPR(drawCanvas, dctx, 900, 420);
+
+// ---------- Shared helpers ----------
+function giveCoins(n){ coins += n; save(); notify(`+${n} coins`); }
+function failKeepRule(){ if(coins >= 15) coins = 5; else coins = 0; save(); updateHUD(); }
+
+// ---------- GAME: FLAPPY (object dodge) ----------
+const FLAP = {
+  running:false,
+  princess:{x:120,y:180,vy:0,size:56},
+  gravity:0.9, flapPower:-11, dashPower:-18,
+  obstacles:[], frames:0, spawnBase:110, score:0
+};
+
+function flapReset(){
+  FLAP.princess.y = mainCanvas.height/2;
+  FLAP.princess.vy = 0;
+  FLAP.obstacles = [];
+  FLAP.frames = 0;
+  FLAP.score = 0;
+  drawFlap();
+}
+function spawnFlapObj(){
+  if(!selected) return;
+  const y = 30 + Math.random()*(mainCanvas.height-120);
+  FLAP.obstacles.push({x: mainCanvas.width + 40, y, w:48, h:48, speed: 3 + Math.random()*1.6});
+}
+function flapUpdate(){
+  FLAP.frames++;
+  const rate = Math.max(40, FLAP.spawnBase - Math.floor(FLAP.score/6));
+  if(FLAP.frames % rate === 0) spawnFlapObj();
+  // physics
+  FLAP.princess.vy += FLAP.gravity*0.6;
+  FLAP.princess.y += FLAP.princess.vy;
+  const ground = mainCanvas.height - 60;
+  if(FLAP.princess.y > ground) { FLAP.princess.y = ground; FLAP.princess.vy = 0; }
+  if(FLAP.princess.y < 18) { FLAP.princess.y = 18; FLAP.princess.vy = 0; }
+  // move obstacles
+  for(let i=FLAP.obstacles.length-1;i>=0;i--){
+    const ob = FLAP.obstacles[i];
+    ob.x -= ob.speed + Math.min(4, FLAP.score/60);
+    if(ob.x + ob.w < -20){ FLAP.obstacles.splice(i,1); FLAP.score++; giveCoins(1); }
   }
-}
-
-// Show sections
-function showSection(id) {
-  document.querySelectorAll("section").forEach(s => s.style.display = "none");
-  document.getElementById(id).style.display = "block";
-}
-
-// ---- Flappy Princess ----
-const flappyCanvas = document.getElementById("flappyCanvas");
-const fctx = flappyCanvas.getContext("2d");
-let fY = 200, fVel = 0, fObstacles = [], fFrame = 0;
-
-function resetFlappy() {
-  fY = 200;
-  fVel = 0;
-  fObstacles = [];
-  fFrame = 0;
-}
-
-function flappyLoop() {
-  fFrame++;
-  fVel += 0.5;
-  fY += fVel;
-  if (fFrame % 100 === 0) {
-    fObstacles.push({x:600,y:Math.random()*300+50});
-  }
-  fctx.clearRect(0,0,600,400);
-  fctx.fillStyle = "pink";
-  fctx.beginPath();
-  fctx.arc(100,fY,20,0,Math.PI*2);
-  fctx.fill();
-  fctx.fillStyle="purple";
-  for (let i=0;i<fObstacles.length;i++){
-    let o=fObstacles[i];
-    fctx.fillRect(o.x,o.y,30,30);
-    o.x-=3;
-    if (o.x<90 && o.x>70 && fY>o.y-20 && fY<o.y+50) {
-      resetFlappy();
+  // collisions (fair hitbox reduced)
+  const px = FLAP.princess.x - FLAP.princess.size*0.28, py = FLAP.princess.y - FLAP.princess.size*0.28, pw = FLAP.princess.size*0.56, ph = FLAP.princess.size*0.56;
+  for(const ob of FLAP.obstacles){
+    if(px < ob.x + ob.w && px + pw > ob.x && py < ob.y + ob.h && py + ph > ob.y){
+      // hit!
+      if(hearts > 0){ hearts--; save(); notify('Heart used — back to start'); FLAP.princess.y = mainCanvas.height/2; FLAP.obstacles=[]; return; }
+      failKeepRule();
+      FLAP.running = false;
+      FLAP.princess.y = mainCanvas.height/2;
+      FLAP.obstacles = [];
+      notify('You hit an obstacle — back to start');
       return;
     }
-    if (o.x===70) {coins+=1;updateStats();}
   }
-  requestAnimationFrame(flappyLoop);
 }
-document.body.addEventListener("keydown",e=>{if(e.code==="Space") fVel=-7;});
-showSection('flappy');
-flappyLoop();
+function drawFlap(){
+  ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
+  // soft gradient
+  const g = ctx.createLinearGradient(0,0,0,mainCanvas.height);
+  g.addColorStop(0,'#fff0fb'); g.addColorStop(1,'#fff');
+  ctx.fillStyle = g; ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
+  // ground
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(0, mainCanvas.height-60, mainCanvas.width, 60);
+  // princess (draw simple avatar)
+  drawPrincess(FLAP.princess.x, FLAP.princess.y, FLAP.princess.size);
+  // obstacles: draw small boxes with object icon
+  FLAP.obstacles.forEach(ob=>{
+    ctx.fillStyle = '#7a1b5a'; ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
+    drawObjectIcon(ctx, ob.x + ob.w/2, ob.y + ob.h/2, selected ? selected.object : 'obj', 18);
+  });
+  // HUD
+  ctx.fillStyle = '#5b3b51'; ctx.font='14px sans-serif'; ctx.fillText(`Score: ${FLAP.score}`, 14, 20);
+}
+function flapLoop(){
+  if(!FLAP.running) return;
+  flapUpdate(); drawFlap();
+  requestAnimationFrame(flapLoop);
+}
+function flapDoAvoid(){
+  // The object's action: a short dash/upwards to avoid obstacle
+  FLAP.princess.vy = FLAP.dashPower;
+}
 
-// ---- Runner ----
-const runnerCanvas=document.getElementById("runnerCanvas");
-const rctx=runnerCanvas.getContext("2d");
-let ry=300, rjump=false, rvy=0, robstacles=[], rframe=0;
-function resetRunner(){ry=300;rvy=0;robstacles=[];rframe=0;}
-runnerCanvas.addEventListener("click",()=>{if(ry===300) rvy=-10;});
-function runnerLoop(){
-  rframe++;
-  rvy+=0.5;
-  ry+=rvy;
-  if(ry>300){ry=300;rvy=0;}
-  if(rframe%120===0){robstacles.push({x:600,y:320});}
-  rctx.clearRect(0,0,600,400);
-  rctx.fillStyle="pink";
-  rctx.fillRect(100,ry-20,40,40);
-  rctx.fillStyle="purple";
-  for(let i=0;i<robstacles.length;i++){let o=robstacles[i];o.x-=5;rctx.fillRect(o.x,o.y,20,40);
-    if(o.x<140&&o.x>100&&ry>280){resetRunner();return;}
-    if(o.x===100){coins+=1;updateStats();}
+// controls: space or object button
+window.addEventListener('keydown', (e)=>{ if(e.code === 'Space'){ if(currentGame==='flap' && FLAP.running) FLAP.princess.vy = FLAP.flapPower; if(currentGame==='runner' && runnerReady) triggerRunnerJump(); } });
+mainCanvas.addEventListener('pointerdown', (e)=>{ if(currentGame==='flap' && FLAP.running) FLAP.princess.vy = FLAP.flapPower; });
+
+// ---------- helper draw princess & object icons ----------
+function drawPrincess(x,y,size){
+  if(selected && selected.svg){
+    const img = new Image(); img.src = selected.svg; img.onload = ()=> ctx.drawImage(img,x-size/2,y-size/2,size,size);
+    img.onerror = ()=> { ctx.fillStyle=selected ? selected.color : '#c0a0ff'; ctx.beginPath(); ctx.arc(x,y,size/2,0,Math.PI*2); ctx.fill(); }
+  } else {
+    ctx.fillStyle = '#c0a0ff'; ctx.beginPath(); ctx.arc(x,y,size/2,0,Math.PI*2); ctx.fill();
   }
+}
+function drawObjectIcon(ctx, cx, cy, obj, size){
+  ctx.save(); ctx.translate(cx,cy);
+  switch(obj){
+    case 'seashell': ctx.fillStyle='#fff1f6'; ctx.beginPath(); ctx.moveTo(-size/2,0); for(let i=0;i<6;i++){const a=Math.PI*(i/6); ctx.lineTo(-Math.cos(a)*size/2, Math.sin(a)*size/3);} ctx.closePath(); ctx.fill(); break;
+    case 'snowflake': ctx.strokeStyle='#e6f7ff'; ctx.lineWidth=2; for(let i=0;i<6;i++){ctx.beginPath(); const a=i*Math.PI/3; ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*size/2, Math.sin(a)*size/2); ctx.stroke();} break;
+    case 'wave': ctx.fillStyle='#d0f0ff'; ctx.beginPath(); ctx.arc(-size/6,0,size/3,Math.PI*0.2,Math.PI*1.2); ctx.arc(size/6,0,size/3,Math.PI*0.2,Math.PI*1.2); ctx.fill(); break;
+    case 'sword': ctx.fillStyle='#e6e6e6'; ctx.fillRect(-2,-size/2,4,size); ctx.fillStyle='#cfcfcf'; ctx.fillRect(-8,size/2-6,16,6); break;
+    case 'slipper': ctx.fillStyle='#fff2ff'; ctx.beginPath(); ctx.moveTo(-size/2,0); ctx.quadraticCurveTo(0,-size/2,size/2,0); ctx.lineTo(size/2-6,size/3); ctx.quadraticCurveTo(0,size/2,-size/2,size/3); ctx.fill(); break;
+    case 'lizard': ctx.fillStyle='#b8f0a8'; ctx.beginPath(); ctx.ellipse(0,0,size/2,size/3,0,0,Math.PI*2); ctx.fill(); break;
+    case 'frog': ctx.fillStyle='#9fe6a8'; ctx.beginPath(); ctx.arc(-6,-4,size/6,0,Math.PI*2); ctx.arc(10,-4,size/6,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(2,6,size/3,0,Math.PI*2); ctx.fill(); break;
+    case 'book': ctx.fillStyle='#fff8e6'; ctx.fillRect(-size/3,-size/4,size*2/3,size/2); ctx.strokeStyle='#c9b08a'; ctx.strokeRect(-size/3,-size/4,size*2/3,size/2); break;
+    default: ctx.fillStyle='#fff'; ctx.fillRect(-size/3,-size/3,size*2/3,size*2/3);
+  }
+  ctx.restore();
+}
+
+// ---------- GAME: RUNNER (countdown, jump) ----------
+let runnerReady = false;
+const RUN = { running:false, player:{x:80,y:280,vy:0,w:36,h:36}, gravity:0.9,jump:-14, obstacles:[], frames:0, score:0, coinsOnTrack:[] };
+
+function runnerReset(){
+  RUN.player.y = mainCanvas.height - 86; RUN.player.vy = 0; RUN.obstacles = []; RUN.frames = 0; RUN.score = 0; RUN.coinsOnTrack=[];
+  drawRunner();
+}
+function spawnRunnerObs(){ RUN.obstacles.push({x:mainCanvas.width+40,y:mainCanvas.height-86-6,w:36,h:36,speed:4+Math.random()*1.6}); }
+function spawnRunnerCoin(){ RUN.coinsOnTrack.push({x:mainCanvas.width+80,y:mainCanvas.height-86-60,r:8}); }
+function runnerUpdate(){
+  RUN.frames++;
+  if(RUN.frames % 100 === 0) spawnRunnerObs();
+  if(RUN.frames % 160 === 0) spawnRunnerCoin();
+  RUN.player.vy += RUN.gravity;
+  RUN.player.y += RUN.player.vy;
+  if(RUN.player.y > mainCanvas.height - 86) RUN.player.y = mainCanvas.height - 86;
+  for(let i=RUN.obstacles.length-1;i>=0;i--){ RUN.obstacles[i].x -= RUN.obstacles[i].speed; if(RUN.obstacles[i].x + RUN.obstacles[i].w < -20) { RUN.obstacles.splice(i,1); RUN.score++; giveCoins(1); } }
+  for(let i=RUN.coinsOnTrack.length-1;i>=0;i--){ RUN.coinsOnTrack[i].x -= 3; const c=RUN.coinsOnTrack[i]; const dx=c.x-(RUN.player.x+RUN.player.w/2); const dy=c.y-(RUN.player.y+RUN.player.h/2); if(Math.hypot(dx,dy) < 22){ RUN.coinsOnTrack.splice(i,1); giveCoins(1); } if(c.x < -20) RUN.coinsOnTrack.splice(i,1); }
+  // collision with tightened hitbox
+  const px = RUN.player.x + RUN.player.w*0.15, py = RUN.player.y + RUN.player.h*0.08, pw = RUN.player.w*0.7, ph = RUN.player.h*0.84;
+  for(const ob of RUN.obstacles){
+    if(px < ob.x + ob.w && px + pw > ob.x && py < ob.y + ob.h && py + ph > ob.y){
+      if(hearts > 0){ hearts--; save(); notify('Heart used — back to start'); RUN.player.y = mainCanvas.height - 86; RUN.obstacles = []; return; }
+      failKeepRule(); RUN.running = false; RUN.player.y = mainCanvas.height - 86; RUN.obstacles=[]; notify('Hit — back to start'); return;
+    }
+  }
+}
+function drawRunner(){
+  ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
+  const g = ctx.createLinearGradient(0,0,0,mainCanvas.height); g.addColorStop(0,'#fff8fb'); g.addColorStop(1,'#fff');
+  ctx.fillStyle = g; ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,mainCanvas.height-86,mainCanvas.width,86);
+  // player
+  drawPrincess(RUN.player.x + RUN.player.w/2, RUN.player.y + RUN.player.h/2, RUN.player.w);
+  // obstacles
+  ctx.fillStyle = '#7a1b5a'; RUN.obstacles.forEach(ob => ctx.fillRect(ob.x, ob.y, ob.w, ob.h));
+  ctx.fillStyle = '#ffd34d'; RUN.coinsOnTrack.forEach(c=>{ ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle='#5b3b51'; ctx.font='14px sans-serif'; ctx.fillText(`Distance: ${RUN.score}`, 12, 20);
+}
+function runnerLoop(){
+  if(!RUN.running) return;
+  runnerUpdate(); drawRunner();
   requestAnimationFrame(runnerLoop);
 }
-runnerLoop();
+function triggerRunnerJump(){ if(RUN.player.y >= mainCanvas.height - 86) RUN.player.vy = RUN.jump; }
 
-// ---- Match Game ----
-const matchBoard=document.getElementById("matchBoard");
-const objects=["seashell","snowflake","wave","sword","slipper","lizard"];
-let cards=objects.concat(objects);
-cards.sort(()=>0.5-Math.random());
-let first=null;
-function renderMatch(){
-  matchBoard.innerHTML="";
-  cards.forEach((c,i)=>{
-    let btn=document.createElement("button");
-    btn.innerText=first===i||c.matched?c:"?";
-    btn.style.margin="5px";btn.style.width="80px";btn.style.height="80px";
-    btn.onclick=()=>flipCard(i);
-    matchBoard.appendChild(btn);
+// pointer control for runner jump
+mainCanvas.addEventListener('pointerdown', e => {
+  if(currentGame === 'runner' && RUN.running){ triggerRunnerJump(); }
+});
+
+// ---------- GAME: MATCH (12 cards, 6 pairs) ----------
+const MATCH_OBJS = ['seashell','snowflake','wave','sword','slipper','lizard','frog','book'];
+let matchState = {cards:[], flipped:[], removed:0};
+
+function initMatch(){
+  const objs = MATCH_OBJS.slice(0,6);
+  let deck = objs.concat(objs);
+  // shuffle
+  for(let i=0;i<300;i++){ const a=Math.floor(Math.random()*12), b=Math.floor(Math.random()*12); [deck[a],deck[b]]=[deck[b],deck[a]]; }
+  matchState.cards = deck.map((o,i)=>({id:i,obj:o,face:false,dead:false}));
+  matchState.flipped = []; matchState.removed = 0;
+  drawMatch();
+}
+function drawMatch(){
+  ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
+  ctx.fillStyle = '#fff7ff'; ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
+  // grid 4x3
+  const cols=4, rows=3, w=120, h=120, gap=16;
+  const startX = (mainCanvas.width - (cols*w + (cols-1)*gap))/2;
+  const startY = 24;
+  ctx.font='18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  matchState.cards.forEach((card, i)=>{
+    const r=Math.floor(i/cols), c=i%cols;
+    const x=startX + c*(w+gap), y=startY + r*(h+gap);
+    if(card.dead) return;
+    if(card.face){
+      ctx.fillStyle='#7a1b5a'; ctx.fillRect(x,y,w,h);
+      drawObjectIcon(ctx, x+w/2, y+h/2, card.obj, 28);
+    } else {
+      ctx.fillStyle='#fff'; ctx.fillRect(x,y,w,h);
+      ctx.strokeStyle='#e6d6e6'; ctx.strokeRect(x,y,w,h);
+      ctx.fillStyle='#5b3b51'; ctx.fillText('?', x+w/2, y+h/2);
+    }
   });
 }
-cards=cards.map(c=>({name:c,matched:false}));
-function flipCard(i){
-  if(first===null){first=i;} else {
-    if(cards[i].name===cards[first].name){cards[i].matched=true;cards[first].matched=true;coins+=5;updateStats();}
-    first=null;
+function flipCardAt(mx,my){
+  const cols=4, rows=3, w=120, h=120, gap=16;
+  const startX = (mainCanvas.width - (cols*w + (cols-1)*gap))/2;
+  const startY = 24;
+  for(let i=0;i<12;i++){
+    const r=Math.floor(i/cols), c=i%cols;
+    const x = startX + c*(w+gap), y = startY + r*(h+gap);
+    if(matchState.cards[i].dead) continue;
+    if(mx >= x && mx <= x+w && my >= y && my <= y+h){
+      const card = matchState.cards[i];
+      if(card.face) return;
+      card.face = true; matchState.flipped.push(card);
+      drawMatch();
+      if(matchState.flipped.length === 2){
+        const [a,b] = matchState.flipped;
+        if(a.obj === b.obj){
+          a.dead = true; b.dead = true; matchState.removed += 2; matchState.flipped = []; coins += 3; save(); notify('+3 coins for a match');
+          if(matchState.removed === 12){ coins += 10; save(); notify('All pairs cleared! +10 coins'); }
+          setTimeout(drawMatch, 200);
+        } else {
+          setTimeout(()=>{ a.face=false; b.face=false; matchState.flipped=[]; drawMatch(); }, 700);
+        }
+      }
+      return;
+    }
   }
-  renderMatch();
 }
-renderMatch();
+mainCanvas.addEventListener('pointerdown', (e)=>{
+  if(currentGame === 'match'){
+    const rect = mainCanvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (mainCanvas.width / rect.width);
+    const my = (e.clientY - rect.top) * (mainCanvas.height / rect.height);
+    flipCardAt(mx,my);
+  }
+});
 
-// ---- Path Game ----
-const pathCanvas=document.getElementById("pathCanvas");
-const pctx=pathCanvas.getContext("2d");
-let path=[{x:100,y:200}], px=100, py=200, pobj=[];
-pathCanvas.addEventListener("mousemove",e=>{if(e.buttons===1){path.push({x:e.offsetX,y:e.offsetY});}});
-function pathLoop(){
-  pctx.clearRect(0,0,600,400);
-  pctx.fillStyle="pink";pctx.beginPath();pctx.arc(px,py,20,0,Math.PI*2);pctx.fill();
-  if(path.length>0){let next=path.shift();px=next.x;py=next.y;}
-  if(Math.random()<0.01)pobj.push({x:600,y:Math.random()*350});
-  pctx.fillStyle="purple";
-  pobj.forEach(o=>{o.x-=2;pctx.fillRect(o.x,o.y,20,20);
-    if(px>o.x&&px<o.x+20&&py>o.y&&py<o.y+20){px=100;py=200;path=[];pobj=[];}
-  });
-  requestAnimationFrame(pathLoop);
+// ---------- GAME: PATH (endless scrolling + draw ahead) ----------
+let PATH = {drawing:false, points:[], obstacles:[], car:{x:120,y:300,r:14}, running:false, speed:2, spawnTick:0};
+function initPath(){
+  PATH.points = []; PATH.obstacles=[]; PATH.car.x = 120; PATH.car.y = drawCanvas.height/2 + 40; PATH.running = false; PATH.speed = 2; PATH.spawnTick = 0;
+  // generate initial obstacles ahead
+  for(let i=0;i<6;i++){
+    PATH.obstacles.push({x:500 + i*220 + Math.random()*160, y:120 + Math.random()*(drawCanvas.height-260), w:40 + Math.random()*60, h:30 + Math.random()*40});
+  }
+  drawPathScene();
 }
-pathLoop();
+function drawPathScene(){
+  dctx.clearRect(0,0,drawCanvas.width, drawCanvas.height);
+  dctx.fillStyle = '#fff7ff'; dctx.fillRect(0,0,drawCanvas.width, drawCanvas.height);
+  // draw scroll background stripes
+  for(let i=0;i<40;i++){
+    dctx.fillStyle = i%2? 'rgba(255,240,250,0.03)':'rgba(230,230,255,0.02)';
+    dctx.fillRect((i*200 - (Date.now()/20)%200), drawCanvas.height-60, 200, 60);
+  }
+  // draw path the user drew
+  if(PATH.points.length > 1){
+    dctx.strokeStyle = 'rgba(255,110,150,0.9)'; dctx.lineWidth = 6; dctx.beginPath();
+    dctx.moveTo(PATH.points[0].x, PATH.points[0].y);
+    for(let i=1;i<PATH.points.length;i++) dctx.lineTo(PATH.points[i].x, PATH.points[i].y);
+    dctx.stroke();
+  }
+  // draw obstacles (scrolling left to create endless feeling)
+  dctx.fillStyle = '#7a1b5a';
+  PATH.obstacles.forEach(ob => dctx.fillRect(ob.x - PATH.spawnTick, ob.y, ob.w, ob.h));
+  // draw car (princess avatar) at PATH.car
+  drawPrincessOnDrawCanvas(PATH.car.x, PATH.car.y, PATH.car.r*2);
+  // draw coins on track (small yellow circles)
+  // animate
+}
+function drawPrincessOnDrawCanvas(x,y,size){
+  // draw a simple circle with initials
+  dctx.save();
+  dctx.beginPath(); dctx.fillStyle = selected ? selected.color : '#c0a0ff'; dctx.arc(x,y,size/2,0,Math.PI*2); dctx.fill();
+  dctx.fillStyle='white'; dctx.font='14px sans-serif'; dctx.textAlign='center'; dctx.textBaseline='middle'; dctx.fillText(selected ? selected.name.slice(0,2).toUpperCase() : 'PR', x, y);
+  dctx.restore();
+}
+function followPath(){
+  if(!PATH.running) return;
+  // continuous scroll: increment spawnTick to simulate world movement
+  PATH.spawnTick += PATH.speed;
+  // Advance car along user's drawn path points if any exist: the car tries to follow the next point ahead
+  if(PATH.points.length > 0){
+    // use first point as target, move car smoothly toward it, then shift
+    const target = PATH.points[0];
+    const dx = target.x - PATH.car.x, dy = target.y - PATH.car.y;
+    PATH.car.x += dx * 0.08; PATH.car.y += dy * 0.08;
+    // if very close, remove point
+    if(Math.hypot(dx,dy) < 6) PATH.points.shift();
+  } else {
+    // if no drawn path, gently move forward
+    PATH.car.x += 0.6;
+  }
+  // obstacles move left visually by spawnTick; detect collision by comparing car position vs obstacle x - spawnTick
+  for(const ob of PATH.obstacles){
+    const ox = ob.x - PATH.spawnTick;
+    if(PATH.car.x + PATH.car.r > ox && PATH.car.x - PATH.car.r < ox + ob.w && PATH.car.y + PATH.car.r > ob.y && PATH.car.y - PATH.car.r < ob.y + ob.h){
+      // collision
+      if(hearts > 0){ hearts--; save(); notify('Heart used — back to start'); PATH.car.x = 120; PATH.car.y = drawCanvas.height/2 + 40; PATH.points = []; PATH.running=false; return; }
+      failKeepRule(); PATH.car.x = 120; PATH.car.y = drawCanvas.height/2 + 40; PATH.points=[]; PATH.running=false; notify('Hit obstacle — back to start'); return;
+    }
+  }
+  // occasionally spawn new obstacles far ahead so it's endless
+  if(PATH.spawnTick > 300){
+    PATH.spawnTick = 0;
+    const lastX = PATH.obstacles.length ? PATH.obstacles[PATH.obstacles.length-1].x + 220 + Math.random()*120 : 800;
+    PATH.obstacles.push({x:lastX, y:100 + Math.random()*(drawCanvas.height-200), w:40 + Math.random()*60, h:30 + Math.random()*40});
+    // speed up slowly to increase difficulty
+    PATH.speed = Math.min(6, PATH.speed + 0.08);
+  }
+  // draw
+  drawPathScene();
+  requestAnimationFrame(followPath);
+}
+
+// drawing interaction
+let drawingActive = false;
+drawCanvas.addEventListener('pointerdown', (e)=> {
+  if(currentGame !== 'path') return;
+  drawingActive = true; PATH.points = [];
+  const rect = drawCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (drawCanvas.width / rect.width);
+  const y = (e.clientY - rect.top) * (drawCanvas.height / rect.height);
+  PATH.points.push({x,y});
+  drawPathScene();
+});
+drawCanvas.addEventListener('pointermove', (e)=> {
+  if(!drawingActive) return;
+  const rect = drawCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (drawCanvas.width / rect.width);
+  const y = (e.clientY - rect.top) * (drawCanvas.height / rect.height);
+  PATH.points.push({x,y});
+  if(PATH.points.length > 300) PATH.points.shift();
+  drawPathScene();
+});
+drawCanvas.addEventListener('pointerup', (e)=> {
+  if(!drawingActive) return;
+  drawingActive = false;
+  if(PATH.points.length > 4){
+    PATH.running = true; PATH.spawnTick = 0; followPath(); notify('Path running — good luck!');
+  } else {
+    notify('Draw a longer path ahead of the car');
+  }
+});
+
+// ---------- Start / Reset management & view preparation ----------
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const countdownEl = document.getElementById('countdown');
+
+startBtn.addEventListener('click', ()=> {
+  if(!selected){ notify('Pick a princess first'); return; }
+  // countdown 3..2..1
+  let n=3; countdownEl.textContent = n;
+  const cd = setInterval(()=>{ n--; countdownEl.textContent = n>0 ? n : ''; if(n<0){ clearInterval(cd); countdownEl.textContent=''; actuallyStart(); } }, 650);
+});
+resetBtn.addEventListener('click', ()=> { resetCurrentGame(); notify('Reset'); });
+
+function actuallyStart(){
+  if(currentGame === 'flap'){ FLAP.running = true; flapReset(); flapLoop(); notify('Flappy started'); }
+  if(currentGame === 'runner'){ RUN.running = true; runnerReset(); runnerLoop(); notify('Runner started'); }
+  if(currentGame === 'match'){ initMatch(); notify('Match started'); }
+  if(currentGame === 'path'){ initPath(); PATH.running=false; notify('Draw path to start'); drawPathScene(); }
+}
+function resetCurrentGame(){
+  countdownEl.textContent = '';
+  if(currentGame === 'flap'){ FLAP.running = false; flapReset(); }
+  if(currentGame === 'runner'){ RUN.running = false; runnerReset(); }
+  if(currentGame === 'match'){ initMatch(); }
+  if(currentGame === 'path'){ PATH.running=false; initPath(); drawPathScene(); }
+}
+
+// ---------- Prepare view when switching games ----------
+function prepareView(){
+  // show/hide drawCanvas if path game
+  if(currentGame === 'path'){ drawCanvas.style.display='block'; mainCanvas.style.display='none'; } else { drawCanvas.style.display='none'; mainCanvas.style.display='block'; }
+  // clear canvases and initialize game-specific state
+  if(currentGame === 'flap'){ flapReset(); drawFlap(); }
+  if(currentGame === 'runner'){ runnerReset(); drawRunner(); }
+  if(currentGame === 'match'){ initMatch(); drawMatch(); }
+  if(currentGame === 'path'){ initPath(); drawPathScene(); }
+  setupObjectControl();
+}
+prepareView();
+
+// ---------- Setup object control button action: for flappy, tap to avoid ----------
+function setupObjectControl(){
+  const area = document.getElementById('objectControlArea');
+  area.innerHTML = '';
+  if(!selected) return;
+  const btn = document.createElement('button'); btn.className='object-button';
+  btn.innerHTML = `<span class="dot" style="background:${selected.color}"></span><span style="font-weight:700">${selected.object}</span>`;
+  btn.addEventListener('click', ()=> {
+    if(currentGame === 'flap' && FLAP.running){ flapDoAvoid(); }
+    if(currentGame === 'runner' && RUN.running){ triggerRunnerJump(); }
+    if(currentGame === 'path'){ /* optionally a boost — not implemented to keep flowy */ }
+  });
+  area.appendChild(btn);
+}
+
+// ---------- Helpers & initial state ----------
+function saveState(){ localStorage.setItem('arc_coins', coins); localStorage.setItem('arc_hearts', hearts); updateHUD(); }
+function giveCoins(n){ coins += n; saveState(); notify(`+${n} coins`); }
+function save(){ saveState(); }
+saveState();
+
+// initialize all games (draw initial screens)
+flapReset(); runnerReset(); initMatch(); initPath(); drawPathScene();
+
+// Ensure responsive canvas on resize
+window.addEventListener('resize', ()=> {
+  // keep look — canvases sized by CSS but internal drawing uses fixed transform; this simple approach still works
+});
+
+// No blocking alerts. All feedback is via notify().
+
 </script>
 </body>
 </html>
+```
+
 
