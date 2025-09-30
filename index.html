@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Princess Arcade — Remix</title>
+<style>
+  :root{
+    --accent:#ff5aa2;
+    --muted:#5b3b51;
+    --card:#fffafc;
+    --bg0:#ffdff6;
+  }
+  html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg0);}
+  .wrap{max-width:1150px;margin:18px auto;padding:18px;background:rgba(255,255,255,0.96);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.08)}
+  header{display:flex;justify-content:space-between;align-items:center}
+  h1{margin:0;color:var(--muted)}
+  .top-right{display:flex;gap:12px;align-items:center}
+  .prin-bar{display:flex;gap:10px;overflow:auto;padding:12px;margin-top:12px;border-radius:12px;background:linear-gradient(90deg,#fff,#fff0)}
+  .prin{width:88px;flex:0 0 auto;border-radius:10px;padding:6px;background:var(--card);text-align:center;cursor:pointer;border:2px solid transparent;transition:transform .16s,box-shadow .16s}
+  .prin.selected{transform:translateY(-8px);border-color:var(--accent);box-shadow:0 10px 30px rgba(255,90,150,0.14)}
+  .avatar-img{width:68px;height:68px;border-radius:8px;display:block;margin:0 auto 6px auto}
+  .small{font-size:13px;color:#5b3b51}
+  .main{display:flex;gap:14px;margin-top:14px}
+  .left{flex:1}
+  .right{width:360px}
+  .card{background:linear-gradient(180deg,#fff,#fff0);padding:12px;border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,0.06)}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{padding:8px 10px;border-radius:8px;background:#fff;border:1px solid #eee;cursor:pointer}
+  .tab.active{background:linear-gradient(180deg,var(--accent),#ff2f86);color:white;border:none}
+  canvas{width:100%;height:360px;border-radius:10px;background:transparent;display:block}
+  #blockCanvas{height:160px}
+  .hud{display:flex;gap:12px;align-items:center;margin-top:8px}
+  .btn{padding:8px 12px;border-radius:10px;border:none;background:var(--accent);color:white;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid #eee;color:#333}
+  .instructions{margin-top:10px;padding:10px;border-radius:10px;background:#fff}
+  #shopModal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center}
+  .modalCard{width:420px;background:white;padding:18px;border-radius:12px}
+  .draggableBlock{width:68px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:white;margin:6px;cursor:grab}
+  .flex{display:flex;gap:8px;align-items:center}
+  footer{margin-top:12px;color:#876572;font-size:13px}
+  @media (max-width:980px){ .main{flex-direction:column} .right{width:100%} canvas{height:320px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Princess Arcade — Remastered</h1>
+      <div class="top-right">
+        <div class="small">Coins: <strong id="coinsDisplay">0</strong></div>
+        <div class="small">Hearts: <strong id="heartsDisplay">0</strong></div>
+        <button id="openShop" class="btn">Open Shop</button>
+      </div>
+    </header>
+
+    <!-- Princess picker: SVG images embedded as data URIs so it works offline -->
+    <div class="prin-bar" id="prinBar" aria-label="Princess picker">
+      <!-- Each .prin has data-name and data-svg (we will generate data URI in script) -->
+      <div class="prin" data-name="Ariel" data-color="#ff7fbf"><img class="avatar-img" alt="Ariel" id="img-Ariel"><div class="small">Ariel</div></div>
+      <div class="prin" data-name="Belle" data-color="#ffd07a"><img class="avatar-img" alt="Belle" id="img-Belle"><div class="small">Belle</div></div>
+      <div class="prin" data-name="Cinderella" data-color="#9fc9ff"><img class="avatar-img" alt="Cinderella" id="img-Cinderella"><div class="small">Cinderella</div></div>
+      <div class="prin" data-name="Rapunzel" data-color="#f7d06a"><img class="avatar-img" alt="Rapunzel" id="img-Rapunzel"><div class="small">Rapunzel</div></div>
+      <div class="prin" data-name="Mulan" data-color="#ffd6e9"><img class="avatar-img" alt="Mulan" id="img-Mulan"><div class="small">Mulan</div></div>
+      <div class="prin" data-name="Tiana" data-color="#9be9b6"><img class="avatar-img" alt="Tiana" id="img-Tiana"><div class="small">Tiana</div></div>
+      <div class="prin" data-name="Jasmine" data-color="#c3ffd9"><img class="avatar-img" alt="Jasmine" id="img-Jasmine"><div class="small">Jasmine</div></div>
+      <div class="prin" data-name="Elsa" data-color="#cfe7ff"><img class="avatar-img" alt="Elsa" id="img-Elsa"><div class="small">Elsa</div></div>
+    </div>
+
+    <div style="margin-top:12px" class="card">
+      <div class="tabs" id="gameTabs">
+        <div class="tab active" data-game="flap">Princess Flap</div>
+        <div class="tab" data-game="block">Block Blast</div>
+        <div class="tab" data-game="runner">Princess Runner</div>
+        <div class="tab" data-game="puzzle">Puzzle Tiles</div>
+      </div>
+
+      <div class="main">
+        <div class="left">
+          <div class="card" style="padding:12px">
+            <canvas id="mainCanvas" width="900" height="360"></canvas>
+            <canvas id="blockCanvas" width="520" height="160" style="display:none;margin-top:8px;border-radius:8px;"></canvas>
+
+            <div class="hud">
+              <div class="small">Selected: <strong id="selectedPrincess">None</strong></div>
+              <div style="flex:1"></div>
+              <button id="startBtn" class="btn">Start</button>
+              <button id="resetBtn" class="btn ghost">Reset</button>
+            </div>
+
+            <div class="instructions" id="instructionsBox">
+              Choose a game and press Start. Instructions will appear here.
+            </div>
+          </div>
+        </div>
+
+        <div class="right">
+          <div class="card">
+            <h4 style="margin:0">Shop & Info</h4>
+            <div style="margin-top:8px" id="shopInfo">
+              <div class="small">Click "Open Shop" to view coin requirements and buy hearts (30 coins each).</div>
+              <div style="height:8px"></div>
+              <div class="small">Rules:</div>
+              <ul style="text-align:left;margin:8px 0 0 18px;color:#5b3b51">
+                <li>Reach ≥15 coins at any time: if you later fail, you keep 5 coins.</li>
+                <li>Milestone backgrounds: 50 / 100 / 150 coins unlock different skies.</li>
+                <li>Princess hitting obstacle resets to start position (no top popup).</li>
+              </ul>
+            </div>
+            <div style="height:10px"></div>
+            <div class="card" style="margin-top:10px">
+              <h5 style="margin:4px 0">Block Blast — Drag & Place</h5>
+              <div class="small">There is a blank grid (7×4) and 3 draggable blocks. Drop blocks into cells. If a whole row fills, that row clears and you earn coins.</div>
+              <div style="height:8px"></div>
+              <div id="dragBlocks" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>Made for you, Emilyp — drop into GitHub Pages as <code>index.html</code>.</footer>
+    </div>
+  </div>
+
+  <!-- Shop modal -->
+  <div id="shopModal">
+    <div class="modalCard">
+      <h3>Shop — Hearts & Info</h3>
+      <p class="small">Hearts cost <strong>30 coins</strong> each. Hearts let you survive a hit without resetting coins (you'll just lose a heart and return to start position).</p>
+      <p class="small">You currently have <strong id="modalCoins">0</strong> coins and <strong id="modalHearts">0</strong> hearts.</p>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px">
+        <button id="buyOne" class="btn">Buy 1 Heart (30)</button>
+        <button id="closeShop" class="btn ghost">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* Princess Arcade — improved:
+   - smoother runner collision
+   - princess shown as embedded SVG images (drawn into canvas)
+   - Block Blast: blank grid 7x4 and exactly 3 draggable blocks; full row clears
+   - Shop modal shows coin requirements and lets you buy hearts
+   - On obstacle hit: princess returns to start (no popup)
+   - More princess options
+   - Coins/hearts persist via localStorage
+*/
+
+//// global persisted state
+let coins = Number(localStorage.getItem('pa_coins') || 0);
+let hearts = Number(localStorage.getItem('pa_hearts') || 0);
+const coinsDisplay = document.getElementById('coinsDisplay');
+const heartsDisplay = document.getElementById('heartsDisplay');
+function save(){ localStorage.setItem('pa_coins', String(coins)); localStorage.setItem('pa_hearts', String(hearts)); updateHUD(); }
+function updateHUD(){ coinsDisplay.textContent = coins; heartsDisplay.textContent = hearts; document.getElementById('modalCoins').textContent = coins; document.getElementById('modalHearts').textContent = hearts; }
+updateHUD();
+
+//// Create simple SVG avatar images as data URIs so the site is offline-friendly
+function makeAvatarSVG(name, color){
+  const initials = name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'>
+    <defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='${color}' stop-opacity='1'/><stop offset='1' stop-color='#ffffff' stop-opacity='0.25'/></linearGradient></defs>
+    <rect rx='16' width='100%' height='100%' fill='url(#g)'/>
+    <g transform='translate(0,10)'>
+      <circle cx='80' cy='60' r='36' fill='rgba(255,255,255,0.12)'/>
+      <text x='50%' y='62' text-anchor='middle' font-size='34' font-family='Arial' fill='white' font-weight='700'>${initials}</text>
+      <text x='50%' y='122' text-anchor='middle' font-size='18' font-family='Arial' fill='rgba(90,60,80,0.95)'>${name}</text>
+    </g>
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+// Attach avatar image sources
+document.querySelectorAll('.prin').forEach(pr=>{
+  const name = pr.dataset.name;
+  const color = pr.dataset.color || '#cfa';
+  const imgEl = pr.querySelector('.avatar-img');
+  imgEl.src = makeAvatarSVG(name, color);
+});
+
+//// princess selection
+let selectedPrincess = null;
+document.querySelectorAll('.prin').forEach(pr=>{
+  pr.addEventListener('click', ()=>{
+    document.querySelectorAll('.prin').forEach(p=>p.classList.remove('selected'));
+    pr.classList.add('selected');
+    selectedPrincess = { name: pr.dataset.name, color: pr.dataset.color, svg: makeAvatarSVG(pr.dataset.name, pr.dataset.color) };
+    document.getElementById('selectedPrincess').textContent = selectedPrincess.name;
+  });
+});
+
+//// UI: shop modal
+const shopModal = document.getElementById('shopModal');
+document.getElementById('openShop').addEventListener('click', ()=>{ updateHUD(); shopModal.style.display='flex'; });
+document.getElementById('closeShop').addEventListener('click', ()=>{ shopModal.style.display='none'; });
+document.getElementById('buyOne').addEventListener('click', ()=> {
+  if(coins >= 30){ coins -= 30; hearts++; save(); alert('Heart purchased!'); } else alert('You need 30 coins to buy a heart.');
+});
+
+//// Game tabs
+let currentGame = 'flap';
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    currentGame = t.dataset.game;
+    changeInstructions();
+    prepareViewForGame();
+  });
+});
+function changeInstructions(){
+  const box = document.getElementById('instructionsBox');
+  if(currentGame==='flap') box.innerHTML = "<strong>Flap</strong> — Click/tap the canvas to make the princess flap up. Avoid obstacles. Passing obstacles gives +1 coin each.";
+  if(currentGame==='block') box.innerHTML = "<strong>Block Blast</strong> — Drag any of the 3 blocks into the 7×4 grid cells. If a whole row becomes filled, that row clears and you get coins.";
+  if(currentGame==='runner') box.innerHTML = "<strong>Runner</strong> — Click / press SPACE to jump. The runner has a smaller hitbox now. Hitting obstacle resets princess to start.";
+  if(currentGame==='puzzle') box.innerHTML = "<strong>Puzzle Tiles</strong> — Solve the sliding 3×3 puzzle to earn a big coin bonus.";
+}
+changeInstructions();
+
+//// Canvas setup
+const mainCanvas = document.getElementById('mainCanvas');
+const ctx = mainCanvas.getContext('2d');
+const blockCanvas = document.getElementById('blockCanvas');
+const bctx = blockCanvas.getContext('2d');
+
+function prepareViewForGame(){
+  // show/hide blockCanvas
+  blockCanvas.style.display = currentGame === 'block' ? 'block' : 'none';
+  clearMain();
+}
+function clearMain(){
+  ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
+  ctx.fillStyle = '#fff7ff';
+  ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
+  ctx.fillStyle = '#6b3b51'; ctx.font='18px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Select a game and press Start', mainCanvas.width/2, mainCanvas.height/2);
+}
+clearMain();
+
+//// Shared helpers
+function giveCoins(n){
+  coins += n; save();
+  applyMilestones();
+}
+function applyMilestones(){
+  if(coins >= 150) document.body.style.background = 'linear-gradient(180deg,#ffdff6,#ffe5fb)';
+  else if(coins >= 100) document.body.style.background = 'linear-gradient(90deg,#ff9a9e,#a1c4fd)';
+  else if(coins >= 50) document.body.style.background = 'linear-gradient(180deg,#efe6ff,#fff)';
+  else document.body.style.background = 'var(--bg0)';
+}
+function keepCoinsFailRule(){
+  if(coins >= 15) coins = 5;
+  else coins = 0;
+  save();
+  applyMilestones();
+}
+applyMilestones();
+
+//// GAME: FLAP (improved) ////
+let flap = {
+  running:false,
+  princess:{x:130,y:180,vy:0,w:56,h:56},
+  gravity:0.9, flapPower:-12,
+  obstacles:[], frames:0, score:0
+};
+function flapReset(){
+  flap.princess.y = mainCanvas.height/2; flap.princess.vy = 0; flap.obstacles = []; flap.frames = 0; flap.score = 0;
+  flapDraw();
+}
+function flapSpawn(){
+  const h = 40 + Math.random()*100;
+  const y = Math.random()*(mainCanvas.height-150)+60;
+  flap.obstacles.push({x:mainCanvas.width+30,y:y,w:52,h:h,speed:3+Math.random()*1.8});
+}
+function flapUpdate(){
+  flap.frames++;
+  if(flap.frames % Math.max(50, 90 - Math.floor(flap.score/10)) === 0) flapSpawn();
+  flap.princess.vy += flap.gravity*0.6;
+  flap.princess.y += flap.princess.vy;
+  const ground = mainCanvas.height - 64;
+  if(flap.princess.y > ground) { flap.princess.y = ground; flap.princess.vy = 0; }
+  if(flap.princess.y < 20) { flap.princess.y = 20; flap.princess.vy = 0; }
+  // obstacles move & pass
+  for(let i=flap.obstacles.length-1;i>=0;i--){
+    const ob = flap.obstacles[i];
+    ob.x -= ob.speed + Math.min(4, flap.score/60);
+    if(ob.x + ob.w < -10){ flap.obstacles.splice(i,1); flap.score++; giveCoins(1); }
+  }
+  // collision: tighten princess hitbox for fairness (shrink rect)
+  for(const ob of flap.obstacles){
+    const px = flap.princess.x - 16, py = flap.princess.y - 16, pw = 32, ph = 32;
+    if(px < ob.x + ob.w && px + pw > ob.x && py < ob.y + ob.h && py + ph > ob.y){
+      // hit -> reset to start position (not popup). Use heart if available otherwise apply coin rule and stop
+      if(hearts > 0){ hearts--; save(); flap.princess.y = mainCanvas.height/2; flap.obstacles=[]; return; }
+      keepCoinsFailRule();
+      flap.running = false;
+      flap.princess.y = mainCanvas.height/2;
+      flap.obstacles=[];
+      return;
+    }
+  }
+}
+function drawPrincessOnCtx(x,y,size){
+  // draw selected princess SVG image into the canvas
+  if(selectedPrincess && selectedPrincess.svg){
+    const img = new Image();
+    img.src = selectedPrincess.svg;
+    // draw centered; ensure quick non-blocking draw
+    img.onload = ()=> ctx.drawImage(img, x - size/2, y - size/2, size, size);
+    img.onerror = ()=> {
+      // fallback circle
+      ctx.fillStyle = selectedPrincess ? selectedPrincess.color : '#c0a0ff';
+      ctx.beginPath(); ctx.arc(x,y,size/2,0,Math.PI*2); ctx.fill();
+    };
+  } else {
+    ctx.fillStyle = '#c0a0ff'; ctx.beginPath(); ctx.arc(x,y,size/2,0,Math.PI*2); ctx.fill();
+  }
+}
+function flapDraw(){
+  // background
+  ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
+  const g = ctx.createLinearGradient(0,0,0,mainCanvas.height);
+  g.addColorStop(0,'#ffdff6'); g.addColorStop(1,'#fff7ff');
+  ctx.fillStyle = g; ctx.fillRect(0,0,mainCanvas.width,mainCanvas.height);
+  // ground
+  ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fillRect(0, mainCanvas.height-64, mainCanvas.width, 64);
+  // princess image (drawn as 56px square)
+  drawPrincessOnCtx(flap.princess.x, flap.princess.y, 56);
+  // obstacles
+  ctx.fillStyle = '#7a1b5a'; flap.obstacles.forEach(ob => ctx.fillRect(ob.x, ob.y, ob.w, ob.h));
+  // HUD
+  ctx.fillStyle='#5b3b51'; ctx.font='14px sans-serif'; ctx.fillText(`Score: ${flap.score}`, 12, 22);
+}
+function flapLoop(){
+  if(!flap.running) return;
+  flapUpdate();
+  flapDraw();
+  requestAnimationFrame(flapLoop);
+}
+
+mainCanvas.addEventListener('pointerdown', e=>{
+  if(currentGame==='flap' && flap.running){
+    flap.princess.vy = flap.flapPower;
+  }
+});
+
+//// GAME: BLOCK BLAST (drag & place blocks into grid) ////
+// 7 columns x 4 rows. The user has three draggable block pieces (colored). Dropping into an empty cell occupies it.
+// When a full row has all cells occupied, it clears and gives coins.
+
+const G_COLS = 7, G_ROWS = 4;
+let grid = [];
+function gridInit(){ grid = []; for(let r=0;r<G_ROWS;r++){ grid[r]=[]; for(let c=0;c<G_COLS;c++) grid[r][c]=0; } drawGrid(); }
+gridInit();
+
+// create three draggable blocks and set up drag/drop
+const dragBlocksWrap = document.getElementById('dragBlocks');
+dragBlocksWrap.innerHTML = '';
+const blockTypes = [
+  {id:'b1', color:'#ff7fbf', value:1},
+  {id:'b2', color:'#ffd07a', value:1},
+  {id:'b3', color:'#9fc9ff', value:1}
+];
+blockTypes.forEach(b=>{
+  const el = document.createElement('div');
+  el.className = 'draggableBlock';
+  el.style.background = b.color;
+  el.dataset.id = b.id;
+  el.textContent = 'BLOCK';
+  dragBlocksWrap.appendChild(el);
+  // attach pointer events for drag
+  el.addEventListener('pointerdown', startBlockDrag);
+});
+
+let dragging = null; // {el, id, offsetX, offsetY}
+function startBlockDrag(e){
+  const el = e.currentTarget;
+  dragging = {el, id: el.dataset.id};
+  el.setPointerCapture(e.pointerId);
+  el.style.position = 'absolute';
+  el.style.zIndex = 9999;
+  document.body.appendChild(el);
+  moveDragged(e);
+  document.addEventListener('pointermove', moveDragged);
+  document.addEventListener('pointerup', endBlockDrag);
+}
+function moveDragged(e){
+  if(!dragging) return;
+  dragging.el.style.left = (e.pageX - 34) + 'px';
+  dragging.el.style.top = (e.pageY - 18) + 'px';
+}
+function endBlockDrag(e){
+  if(!dragging) return;
+  // find if dropped over grid cell in blockCanvas area
+  const rect = blockCanvas.getBoundingClientRect();
+  const x = e.clientX, y = e.clientY;
+  if(x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom){
+    // compute cell
+    const cellW = blockCanvas.width / G_COLS;
+    const cellH = blockCanvas.height / G_ROWS;
+    const cx = Math.floor(( (x - rect.left) * (blockCanvas.width / rect.width) ) / cellW);
+    const cy = Math.floor(( (y - rect.top) * (blockCanvas.height / rect.height) ) / cellH);
+    if(cx >= 0 && cx < G_COLS && cy >= 0 && cy < G_ROWS){
+      if(grid[cy][cx] === 0){
+        grid[cy][cx] = 1; // occupied
+        // award small coin for placing
+        giveCoins(0); // optional: no coin on placement
+        checkFullRows();
+      } else {
+        // cell taken — no effect
+      }
+    }
+  }
+  // return block element to its original container position
+  dragging.el.style.position = 'static';
+  dragging.el.style.left = '';
+  dragging.el.style.top = '';
+  dragBlocksWrap.appendChild(dragging.el);
+  dragging = null;
+  document.removeEventListener('pointermove', moveDragged);
+  document.removeEventListener('pointerup', endBlockDrag);
+  drawGrid();
+}
+function drawGrid(){
+  // draw blank table on blockCanvas
+  bctx.clearRect(0,0,blockCanvas.width, blockCanvas.height);
+  bctx.fillStyle = '#fff7ff'; bctx.fillRect(0,0,blockCanvas.width, blockCanvas.height);
+  const cellW = blockCanvas.width / G_COLS;
+  const cellH = blockCanvas.height / G_ROWS;
+  bctx.strokeStyle = '#e0d6e6';
+  for(let r=0;r<G_ROWS;r++){
+    for(let c=0;c<G_COLS;c++){
+      const x = c*cellW, y = r*cellH;
+      bctx.fillStyle = grid[r][c] ? '#7a1b5a' : '#fff';
+      bctx.fillRect(x+4, y+4, cellW-8, cellH-8);
+      bctx.strokeRect(x+4, y+4, cellW-8, cellH-8);
+    }
+  }
+}
+function checkFullRows(){
+  for(let r=0;r<G_ROWS;r++){
+    let full = true;
+    for(let c=0;c<G_COLS;c++){
+      if(grid[r][c] === 0){ full = false; break; }
+    }
+    if(full){
+      // clear row
+      for(let c=0;c<G_COLS;c++) grid[r][c] = 0;
+      // move everything above down one (gravity)
+      for(let rr=r; rr>0; rr--){
+        for(let c=0;c<G_COLS;c++){
+          grid[rr][c] = grid[rr-1][c];
+        }
+      }
+      for(let c=0;c<G_COLS;c++) grid[0][c] = 0;
+      // reward coins for cleared row
+      giveCoins(5);
+    }
+  }
+  drawGrid();
+}
+
+//// GAME: RUNNER (fix collisions - smaller hitbox) ////
+let runner = {
+  running:false,
+  player:{x:80,y:260,vy:0,w:36,h:36, grounded:true},
+  gravity:0.9, jump:-14,
+  obstacles:[], frames:0, score:0, coinsOnTrack:[]
+};
+function runnerReset(){
+  runner.player.y = mainCanvas.height - 86; runner.player.vy = 0; runner.obstacles=[]; runner.frames=0; runner.score=0; runner.coinsOnTrack=[];
+  runnerDraw();
+}
+function runnerSpawnObstacle(){
+  const y = mainCanvas.height - 86 - 8; runner.obstacles.push({x: mainCanvas.width + 20, y: y, w: 34, h: 34, speed: 4 + Math.random()*1.6});
+}
+function runnerSpawnCoin(){ runner.coinsOnTrack.push({x: mainCanvas.width + 60, y: mainCanvas.height - 120, r:8}); }
+function runnerUpdate(){
+  runner.frames++;
+  if(runner.frames % 90 === 0) runnerSpawnObstacle();
+  if(runner.frames % 140 === 0) runnerSpawnCoin();
+  runner.player.vy += runner.gravity;
+  runner.player.y += runner.player.vy;
+  if(runner.player.y > mainCanvas.height - 86){ runner.player.y = mainCanvas.height - 86; runner.player.vy = 0; runner.player.grounded = true; } else runner.player.grounded = false;
+  // obstacles
+  for(let i=runner.obstacles.length-1;i>=0;i--){
+    const ob = runner.obstacles[i];
+    ob.x -= ob.speed;
+    if(ob.x + ob.w < -10){ runner.obstacles.splice(i,1); runner.score++; giveCoins(1); }
+  }
+  // coins
+  for(let i=runner.coinsOnTrack.length-1;i>=0;i--){
+    const c = runner.coinsOnTrack[i];
+    c.x -= 3;
+    const dx = c.x - (runner.player.x + runner.player.w/2);
+    const dy = c.y - (runner.player.y + runner.player.h/2);
+    if(Math.hypot(dx,dy) < 22){ runner.coinsOnTrack.splice(i,1); giveCoins(1); }
+    if(c.x < -20) runner.coinsOnTrack.splice(i,1);
+  }
+  // collision with smaller hitbox: shrink player's box by 30% for fairness
+  const px = runner.player.x + runner.player.w*0.15, py = runner.player.y + runner.player.h*0.15;
+  const pw = runner.player.w * 0.7, ph = runner.player.h * 0.7;
+  for(const ob of runner.obstacles){
+    if(px < ob.x + ob.w && px + pw > ob.x && py < ob.y + ob.h && py + ph > ob.y){
+      if(hearts > 0){ hearts--; save(); runner.obstacles = []; runner.player.y = mainCanvas.height - 86; return; }
+      keepCoinsFailRule();
+      runner.running = false;
+      runner.player.y = mainCanvas.height - 86;
+      runner.obstacles = [];
+      return;
+    }
+  }
+}
+function runnerDraw(){
+  ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
+  const g = ctx.createLinearGradient(0,0,0,mainCanvas.height);
+  g.addColorStop(0,'#fff8fb'); g.addColorStop(1,'#fff');
+  ctx.fillStyle = g; ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
+  // ground
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, mainCanvas.height-86, mainCanvas.width, 86);
+  // player draw image
+  drawPrincessOnCtx(runner.player.x + runner.player.w/2, runner.player.y + runner.player.h/2, runner.player.w);
+  // obstacles
+  ctx.fillStyle = '#7a1b5a'; runner.obstacles.forEach(ob => ctx.fillRect(ob.x, ob.y, ob.w, ob.h));
+  // coins
+  ctx.fillStyle = '#ffd34d'; runner.coinsOnTrack.forEach(c => { ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill(); });
+  // HUD
+  ctx.fillStyle='#5b3b51'; ctx.font='14px sans-serif'; ctx.fillText(`Distance: ${runner.score}`, 12, 20);
+}
+function runnerLoop(){
+  if(!runner.running) return;
+  runnerUpdate();
+  runnerDraw();
+  requestAnimationFrame(runnerLoop);
+}
+window.addEventListener('keydown', e => {
+  if(e.code === 'Space' && currentGame === 'runner' && runner.running){
+    if(runner.player.grounded) { runner.player.vy = runner.jump; runner.player.grounded=false; }
+  }
+});
+mainCanvas.addEventListener('pointerdown', e=>{
+  if(currentGame === 'runner' && runner.running){
+    if(runner.player.grounded) { runner.player.vy = runner.jump; runner.player.grounded=false; }
+  }
+});
+
+//// GAME: PUZZLE (same sliding but ensure it works) ////
+let puzzle = {grid:[], empty:{x:2,y:2}};
+function puzzleInit(){
+  let arr = [1,2,3,4,5,6,7,8,null];
+  for(let i=0;i<200;i++){ const a=Math.floor(Math.random()*9), b=Math.floor(Math.random()*9); [arr[a],arr[b]]=[arr[b],arr[a]]; }
+  puzzle.grid = [];
+  for(let r=0;r<3;r++){ puzzle.grid[r]=[]; for(let c=0;c<3;c++){ puzzle.grid[r][c] = arr[r*3+c]; if(arr[r*3+c]===null) puzzle.empty={x:c,y:r}; } }
+  puzzleDraw();
+}
+function puzzleDraw(){
+  ctx.clearRect(0,0,mainCanvas.width, mainCanvas.height);
+  ctx.fillStyle = '#fff7ff'; ctx.fillRect(0,0,mainCanvas.width, mainCanvas.height);
+  const size = 110, gap=10;
+  const startX = (mainCanvas.width - (3*size + 2*gap)) / 2;
+  const startY = 30;
+  ctx.font='28px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let r=0;r<3;r++){
+    for(let c=0;c<3;c++){
+      const v = puzzle.grid[r][c];
+      const x = startX + c*(size+gap), y = startY + r*(size+gap);
+      if(v !== null){
+        ctx.fillStyle = '#7a1b5a'; ctx.fillRect(x,y,size,size);
+        ctx.fillStyle = '#fff'; ctx.fillText(v, x+size/2, y+size/2);
+      } else { ctx.fillStyle = '#fff'; ctx.fillRect(x,y,size,size); }
+    }
+  }
+}
+mainCanvas.addEventListener('pointerdown', function puzzleClick(e){
+  if(currentGame !== 'puzzle') return;
+  const rect = mainCanvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (mainCanvas.width / rect.width);
+  const my = (e.clientY - rect.top) * (mainCanvas.height / rect.height);
+  const size = 110, gap=10;
+  const startX = (mainCanvas.width - (3*size + 2*gap)) / 2;
+  const startY = 30;
+  for(let r=0;r<3;r++){
+    for(let c=0;c<3;c++){
+      const x = startX + c*(size+gap), y = startY + r*(size+gap);
+      if(mx >= x && mx <= x+size && my >= y && my <= y+size){
+        const dx = Math.abs(c - puzzle.empty.x), dy = Math.abs(r - puzzle.empty.y);
+        if((dx===1 && dy===0) || (dy===1 && dx===0)){
+          puzzle.grid[puzzle.empty.y][puzzle.empty.x] = puzzle.grid[r][c];
+          puzzle.grid[r][c] = null;
+          puzzle.empty = {x:c,y:r};
+          puzzleDraw();
+          if(checkPuzzleWin()){ giveCoins(10); alert('Puzzle solved — +10 coins!'); }
+        }
+      }
+    }
+  }
+});
+function checkPuzzleWin(){
+  let flat=[];
+  for(let r=0;r<3;r++) for(let c=0;c<3;c++) flat.push(puzzle.grid[r][c]);
+  for(let i=0;i<8;i++) if(flat[i] !== i+1) return false;
+  return true;
+}
+
+//// Start & Reset handling
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  if(!selectedPrincess){ alert('Pick a princess first'); return; }
+  if(currentGame==='flap'){
+    flap.running = true; flapReset(); flapLoop();
+  } else if(currentGame==='block'){
+    // start shows grid and allows drag/drop (already interactive)
+    gridInit(); drawGrid(); // grid is interactive by drag
+  } else if(currentGame==='runner'){
+    runner.running = true; runnerReset(); runnerLoop();
+  } else if(currentGame==='puzzle'){
+    puzzleInit(); // interactive
+  }
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  // keep coins/hearts but reset game-specific state
+  if(currentGame==='flap'){ flap.running=false; flapReset(); }
+  if(currentGame==='block'){ gridInit(); drawGrid(); }
+  if(currentGame==='runner'){ runner.running=false; runnerReset(); }
+  if(currentGame==='puzzle'){ puzzleInit(); }
+});
+
+//// Initial setup
+gridInit(); drawGrid();
+puzzleInit();
+flapReset();
+runnerReset();
+
+//// Ensure HUD saved on unload
+window.addEventListener('beforeunload', ()=> save());
+
+</script>
+</body>
+</html>
